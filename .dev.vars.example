@@ -1,0 +1,2 @@
+# Local development only. Copy this file to .dev.vars.
+DEV_ADMIN_BYPASS=true

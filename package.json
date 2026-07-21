@@ -9,7 +9,7 @@
     "dev": "vinext dev --hostname 0.0.0.0 --port 3001",
     "build": "vinext build",
     "start": "vinext start --hostname 0.0.0.0 --port 3001",
-    "test": "npm run build && node --test tests/rendered-html.test.mjs tests/search-normalization.test.mjs",
+    "test": "npm run build && node --test tests/admin-auth.test.mjs tests/rendered-html.test.mjs tests/search-normalization.test.mjs",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "typecheck": "tsc --noEmit",
     "check": "npm run typecheck && npm run lint && npm test",
@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "drizzle-orm": "0.45.2",
+    "jose": "6.2.4",
     "next": "16.2.6",
     "react": "19.2.6",
     "react-dom": "19.2.6"

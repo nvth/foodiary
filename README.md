@@ -12,7 +12,8 @@ Blog ẩm thực cá nhân chạy trên Vinext và Cloudflare Workers. Nội dun
 - `app/api/admin/*`: upload ảnh và thao tác ghi có kiểm tra email tác giả.
 - `/admin`: giao diện quản lý bài viết, loại món, góp ý và phần giới thiệu dành riêng cho tác giả.
 - `app/api/media`: đọc ảnh từ R2 với cache dài hạn.
-- `.openai/hosting.json`: khai báo logical bindings `DB` và `MEDIA` cho Cloudflare Sites.
+- `wrangler.jsonc`: cấu hình deploy trực tiếp Worker, static assets, D1, R2 và Cloudflare Images.
+- `.openai/hosting.json`: metadata tương thích với bản preview Cloudflare Sites.
 
 ## Chạy local
 
@@ -20,10 +21,11 @@ Yêu cầu Node.js `>=22.13.0`.
 
 ```bash
 npm install
+cp .dev.vars.example .dev.vars
 npm run dev
 ```
 
-Trang local tự nhận quyền tác giả để tiện phát triển. Nếu D1/R2 local chưa sẵn sàng, trang public vẫn hiển thị bộ dữ liệu minh họa; dữ liệu thật luôn dùng platform storage, không dùng localStorage làm nguồn chính.
+`DEV_ADMIN_BYPASS=true` chỉ nằm trong `.dev.vars` local để mở khu vực quản trị khi phát triển; không đưa biến này lên production. Dữ liệu thật luôn dùng platform storage, không dùng localStorage làm nguồn chính.
 
 ## Kiểm tra trước khi deploy
 
@@ -31,7 +33,7 @@ Trang local tự nhận quyền tác giả để tiện phát triển. Nếu D1/
 npm run check
 ```
 
-Lệnh này chạy typecheck, lint, production build và các bài kiểm tra cấu hình Cloudflare.
+Lệnh này chạy typecheck, lint, production build và các bài kiểm tra tự động.
 
 Sau khi thay đổi schema:
 
@@ -43,27 +45,34 @@ Luôn kiểm tra migration mới trong `drizzle/` trước khi deploy.
 
 ## Cấu hình Cloudflare
 
-Ứng dụng yêu cầu hai bindings:
+`wrangler.jsonc` cấu hình Worker `an-dau-hom-nay`, bật URL `workers.dev`, dùng compatibility date `2026-05-15` và khai báo bốn bindings:
 
-- D1 binding: `DB`
-- R2 binding: `MEDIA`
+- `DB`: D1 database `an-dau-hom-nay-db` (`2c7233ff-8df0-4f51-a0a3-00f59be95187`), migration nằm trong `drizzle/`.
+- `MEDIA`: R2 bucket `an-dau-hom-nay-media` (storage class Standard, location APAC).
+- `ASSETS`: static assets được build vào `dist/client`.
+- `IMAGES`: Cloudflare Images binding dùng để tối ưu ảnh.
 
-Các tên logic đã được khai báo trong `.openai/hosting.json`. Khi triển khai bằng Cloudflare Sites, nền tảng tạo/gắn tài nguyên thật và áp dụng migration đi kèm.
+Storage class và location là thuộc tính của bucket R2 đã được tạo, không phải thuộc tính của binding trong Wrangler. Có thể kiểm tra tài nguyên trước khi deploy:
+
+```bash
+npx wrangler d1 info an-dau-hom-nay-db
+npx wrangler r2 bucket info an-dau-hom-nay-media
+```
 
 Thiết lập biến môi trường production:
 
 ```text
+TEAM_DOMAIN=myteam.cloudflareaccess.com
+POLICY_AUD=access-application-audience-tag
 ADMIN_EMAILS=email-cua-ban@example.com
+SUGGESTION_RATE_LIMIT_SECRET=chuoi-bi-mat-dai-ngau-nhien
 ```
 
-Có thể liệt kê nhiều email, phân tách bằng dấu phẩy. Không đặt `DEV_ADMIN_BYPASS=true` trong production.
+`TEAM_DOMAIN` là hostname (hoặc HTTPS origin) của Cloudflare Access team và `POLICY_AUD` là Audience tag của Access Application. Có thể liệt kê nhiều email trong `ADMIN_EMAILS`, phân tách bằng dấu phẩy. Không đặt `DEV_ADMIN_BYPASS=true` trong production.
 
 ## Bảo vệ khu vực viết bài
 
-Trang chủ chỉ cho phép độc giả đọc nội dung review. Ngoại lệ duy nhất là `POST /api/suggestions`, dùng để gửi username tùy chọn và nội dung góp ý đã được giới hạn/kiểm tra phía server; độc giả không thể đọc lại danh sách tin. Các endpoint dưới `/api/admin/*` kiểm tra email phía server từ một trong hai header:
-
-- `Cf-Access-Authenticated-User-Email` khi dùng Cloudflare Access.
-- `oai-authenticated-user-email` khi chạy qua Sites có xác thực workspace.
+Trang chủ chỉ cho phép độc giả đọc nội dung review. Ngoại lệ duy nhất là `POST /api/suggestions`, dùng để gửi username tùy chọn và nội dung góp ý đã được giới hạn/kiểm tra phía server; độc giả không thể đọc lại danh sách tin. Các endpoint dưới `/api/admin/*` xác minh JWT trong header `Cf-Access-Jwt-Assertion` bằng JWKS của `TEAM_DOMAIN`, kiểm tra audience khớp `POLICY_AUD`, rồi mới so email trong token với `ADMIN_EMAILS`. Header email thuần không được dùng làm bằng chứng xác thực.
 
 Khi deploy Cloudflare thông thường, tạo Access Application bảo vệ các path:
 
@@ -84,4 +93,34 @@ Allow policy chỉ nên chứa email của tác giả và phải trùng `ADMIN_E
 
 ## Deploy
 
-Khi sẵn sàng, tạo site trên Cloudflare Sites từ source này, cấu hình `ADMIN_EMAILS`, kiểm tra Access policy, sau đó lưu và deploy một version. Không cần đổi framework hoặc thay lớp database khi chuyển từ local lên Cloudflare.
+Đăng nhập đúng Cloudflare account (hoặc đặt `CLOUDFLARE_ACCOUNT_ID` trong môi trường nếu tài khoản có nhiều account):
+
+```bash
+npx wrangler login
+npx wrangler whoami
+```
+
+Thiết lập secrets production; mỗi lệnh sẽ yêu cầu nhập giá trị và không ghi secret vào Git:
+
+```bash
+npx wrangler secret put TEAM_DOMAIN
+npx wrangler secret put POLICY_AUD
+npx wrangler secret put ADMIN_EMAILS
+npx wrangler secret put SUGGESTION_RATE_LIMIT_SECRET
+```
+
+Build và kiểm tra gói Worker mà không upload:
+
+```bash
+npm run build
+npx wrangler deploy --dry-run
+```
+
+Áp dụng migration D1 từ `drizzle/`, sau đó build và deploy trực tiếp lên Cloudflare Workers:
+
+```bash
+npx wrangler d1 migrations apply DB --remote
+npx vinext deploy
+```
+
+Để áp dụng migration vào D1 local khi phát triển, dùng `npx wrangler d1 migrations apply DB --local`. Sau khi deploy, kiểm tra URL `an-dau-hom-nay.<subdomain>.workers.dev` và Access policy cho `/admin*` cùng `/api/admin/*`.
