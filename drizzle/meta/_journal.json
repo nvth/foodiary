@@ -36,6 +36,13 @@
       "when": 1784663621227,
       "tag": "0004_dizzy_big_bertha",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1784665376584,
+      "tag": "0005_light_rocket_racer",
+      "breakpoints": true
     }
   ]
 }

@@ -53,7 +53,6 @@ export const reviews = sqliteTable(
     excerpt: text("excerpt").notNull(),
     content: text("content").notNull(),
     hashtags: text("hashtags", { mode: "json" }).$type<string[]>().notNull().default(sql`'[]'`),
-    visitedAt: text("visited_at").notNull(),
     isFavorite: integer("is_favorite", { mode: "boolean" }).notNull().default(false),
     isFeatured: integer("is_featured", { mode: "boolean" }).notNull().default(false),
     status: text("status", { enum: ["draft", "published"] }).notNull().default("published"),
@@ -62,7 +61,7 @@ export const reviews = sqliteTable(
   },
   (table) => [
     index("reviews_restaurant_idx").on(table.restaurantId),
-    index("reviews_status_visited_idx").on(table.status, table.visitedAt),
+    index("reviews_status_created_idx").on(table.status, table.isFeatured, table.createdAt),
   ],
 );
 

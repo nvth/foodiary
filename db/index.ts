@@ -169,7 +169,6 @@ async function initializeDatabase(db: D1Database): Promise<void> {
       excerpt TEXT NOT NULL,
       content TEXT NOT NULL,
       hashtags TEXT NOT NULL DEFAULT '[]',
-      visited_at TEXT NOT NULL,
       is_favorite INTEGER NOT NULL DEFAULT 0,
       is_featured INTEGER NOT NULL DEFAULT 0,
       status TEXT NOT NULL DEFAULT 'published' CHECK (status IN ('draft', 'published')),
@@ -206,7 +205,7 @@ async function initializeDatabase(db: D1Database): Promise<void> {
     db.prepare("CREATE INDEX IF NOT EXISTS restaurants_area_idx ON restaurants(area)"),
     db.prepare("CREATE INDEX IF NOT EXISTS restaurants_cuisine_idx ON restaurants(cuisine)"),
     db.prepare("CREATE INDEX IF NOT EXISTS reviews_restaurant_idx ON reviews(restaurant_id)"),
-    db.prepare("CREATE INDEX IF NOT EXISTS reviews_status_visited_idx ON reviews(status, visited_at)"),
+    db.prepare("CREATE INDEX IF NOT EXISTS reviews_status_created_idx ON reviews(status, is_featured, created_at)"),
     db.prepare("CREATE INDEX IF NOT EXISTS suggestions_created_idx ON suggestions(created_at)"),
     db.prepare("CREATE INDEX IF NOT EXISTS suggestions_status_created_idx ON suggestions(status, created_at)"),
     db.prepare("CREATE INDEX IF NOT EXISTS photos_review_sort_idx ON photos(review_id, sort_order)"),
@@ -233,7 +232,6 @@ async function initializeDatabase(db: D1Database): Promise<void> {
       if (!(error instanceof Error) || !/duplicate column/i.test(error.message)) throw error;
     }
   }
-
   await backfillRestaurantCategories(db);
   await db.batch([
     db.prepare("CREATE INDEX IF NOT EXISTS restaurants_category_idx ON restaurants(category_id)"),
@@ -665,8 +663,8 @@ export async function createReview(input: ReviewInput): Promise<string> {
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`)
       .bind(restaurantId, input.name, slug, input.area, input.address, category.name, category.id, input.priceLabel),
     db.prepare(`INSERT INTO reviews
-      (id, restaurant_id, dish, rating, excerpt, content, hashtags, visited_at, is_favorite, is_featured, status)
-      VALUES (?, ?, ?, ?, ?, ?, ?, date('now'), ?, ?, 'published')`)
+      (id, restaurant_id, dish, rating, excerpt, content, hashtags, is_favorite, is_featured, status)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'published')`)
       .bind(
         reviewId,
         restaurantId,

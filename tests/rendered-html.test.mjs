@@ -25,9 +25,10 @@ test("ships the Vietnamese food journal experience", async () => {
 });
 
 test("declares Cloudflare-native persistence and protected mutations", async () => {
-  const [hosting, schema, adminRoute, categoryRoute, publicCategoryRoute, adminAboutRoute, publicAboutRoute, publicSuggestionRoute, adminSuggestionRoute, adminSuggestionPage, adminSidebar, mediaRoute, adminPage, adminAuth, publicPage, envExample] = await Promise.all([
+  const [hosting, schema, visitDateMigration, adminRoute, categoryRoute, publicCategoryRoute, adminAboutRoute, publicAboutRoute, publicSuggestionRoute, adminSuggestionRoute, adminSuggestionPage, adminSidebar, mediaRoute, adminPage, adminAuth, publicPage, envExample] = await Promise.all([
     readFile(new URL("../.openai/hosting.json", import.meta.url), "utf8"),
     readFile(new URL("../db/schema.ts", import.meta.url), "utf8"),
+    readFile(new URL("../drizzle/0005_light_rocket_racer.sql", import.meta.url), "utf8"),
     readFile(new URL("../app/api/admin/reviews/route.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/api/admin/categories/route.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/api/categories/route.ts", import.meta.url), "utf8"),
@@ -59,6 +60,9 @@ test("declares Cloudflare-native persistence and protected mutations", async () 
   assert.match(schema, /sqliteTable\(\s*"blog_settings"/);
   assert.match(schema, /sqliteTable\(\s*"suggestions"/);
   assert.match(schema, /hashtags: text\("hashtags"/);
+  assert.doesNotMatch(schema, /visitedAt|visited_at/);
+  assert.match(visitDateMigration, /DROP INDEX IF EXISTS `reviews_status_visited_idx`/);
+  assert.match(visitDateMigration, /ALTER TABLE `reviews` DROP COLUMN `visited_at`/);
   assert.match(adminRoute, /requireAdmin\(request\)/);
   assert.match(categoryRoute, /requireAdmin\(request\)/);
   assert.match(publicCategoryRoute, /listCategories/);
@@ -74,6 +78,8 @@ test("declares Cloudflare-native persistence and protected mutations", async () 
   assert.match(adminPage, /<AdminDashboard/);
   assert.match(database, /reviews\.created_at/);
   assert.match(database, /postedAt: row\.created_at/);
+  assert.doesNotMatch(database, /INSERT INTO reviews[\s\S]{0,300}visited_at/);
+  assert.match(database, /reviews_status_created_idx/);
   assert.match(database, /ORDER BY reviews\.is_featured DESC, reviews\.created_at DESC/);
   assert.match(adminDashboard, /Ngày giờ đăng/);
   assert.match(adminAuth, /getAdminState\(request\)/);
