@@ -1,4 +1,5 @@
 import type { ReviewInput } from "@/db";
+import { parseReviewHashtags } from "@/lib/hashtag-validation";
 
 const allowedImageTypes = new Set([
   "image/jpeg",
@@ -41,6 +42,7 @@ export function parseReviewInput(value: unknown): ReviewInput {
     rating,
     excerpt: requiredString(input.excerpt, "Mô tả ngắn", 320),
     content: requiredString(input.content, "Bài review", 8000),
+    hashtags: parseReviewHashtags(input.hashtags),
     visitedAt: validDate(input.visitedAt),
     isFavorite: Boolean(input.isFavorite),
     isFeatured: Boolean(input.isFeatured),

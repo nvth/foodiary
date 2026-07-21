@@ -1,6 +1,12 @@
 import { env } from "cloudflare:workers";
 import type { AboutInput } from "@/lib/about-validation";
 import { normalizeCategoryKey, normalizeCategoryName, type CategoryInput } from "@/lib/category-validation";
+import { parseStoredReviewHashtags } from "@/lib/hashtag-validation";
+import type {
+  SuggestionInput,
+  SuggestionListOptions,
+  SuggestionStatus,
+} from "@/lib/suggestion-validation";
 
 const BLOG_SETTINGS_ID = "main";
 
@@ -21,6 +27,7 @@ export type ReviewInput = {
   rating: number;
   excerpt: string;
   content: string;
+  hashtags: string[];
   visitedAt: string;
   isFavorite: boolean;
   isFeatured: boolean;
@@ -45,6 +52,7 @@ export type PublishedSpot = {
   price: string;
   excerpt: string;
   review: string;
+  hashtags: string[];
   image: string;
   gallery: string[];
   galleryCaptions: string[];
@@ -65,6 +73,15 @@ export type CuisineCategory = {
   id: string;
   name: string;
   usageCount: number;
+};
+
+export type Suggestion = {
+  id: string;
+  username: string | null;
+  message: string;
+  status: SuggestionStatus;
+  createdAt: string;
+  updatedAt: string;
 };
 
 type Bindings = {
@@ -152,10 +169,19 @@ async function initializeDatabase(db: D1Database): Promise<void> {
       rating REAL NOT NULL CHECK (rating >= 1 AND rating <= 5),
       excerpt TEXT NOT NULL,
       content TEXT NOT NULL,
+      hashtags TEXT NOT NULL DEFAULT '[]',
       visited_at TEXT NOT NULL,
       is_favorite INTEGER NOT NULL DEFAULT 0,
       is_featured INTEGER NOT NULL DEFAULT 0,
       status TEXT NOT NULL DEFAULT 'published' CHECK (status IN ('draft', 'published')),
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )`),
+    db.prepare(`CREATE TABLE IF NOT EXISTS suggestions (
+      id TEXT PRIMARY KEY NOT NULL,
+      username TEXT,
+      message TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'unread' CHECK (status IN ('unread', 'read')),
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     )`),
@@ -182,16 +208,28 @@ async function initializeDatabase(db: D1Database): Promise<void> {
     db.prepare("CREATE INDEX IF NOT EXISTS restaurants_cuisine_idx ON restaurants(cuisine)"),
     db.prepare("CREATE INDEX IF NOT EXISTS reviews_restaurant_idx ON reviews(restaurant_id)"),
     db.prepare("CREATE INDEX IF NOT EXISTS reviews_status_visited_idx ON reviews(status, visited_at)"),
+    db.prepare("CREATE INDEX IF NOT EXISTS suggestions_created_idx ON suggestions(created_at)"),
+    db.prepare("CREATE INDEX IF NOT EXISTS suggestions_status_created_idx ON suggestions(status, created_at)"),
     db.prepare("CREATE INDEX IF NOT EXISTS photos_review_sort_idx ON photos(review_id, sort_order)"),
     db.prepare("CREATE INDEX IF NOT EXISTS review_dishes_review_sort_idx ON review_dishes(review_id, sort_order)"),
   ]);
 
-  const columns = await db.prepare("PRAGMA table_info(restaurants)").all<{ name: string }>();
-  if (!columns.results.some((column) => column.name === "category_id")) {
+  const [restaurantColumns, reviewColumns] = await Promise.all([
+    db.prepare("PRAGMA table_info(restaurants)").all<{ name: string }>(),
+    db.prepare("PRAGMA table_info(reviews)").all<{ name: string }>(),
+  ]);
+  if (!restaurantColumns.results.some((column) => column.name === "category_id")) {
     try {
       await db
         .prepare("ALTER TABLE restaurants ADD COLUMN category_id TEXT REFERENCES cuisine_categories(id) ON DELETE RESTRICT")
         .run();
+    } catch (error) {
+      if (!(error instanceof Error) || !/duplicate column/i.test(error.message)) throw error;
+    }
+  }
+  if (!reviewColumns.results.some((column) => column.name === "hashtags")) {
+    try {
+      await db.prepare("ALTER TABLE reviews ADD COLUMN hashtags TEXT NOT NULL DEFAULT '[]'").run();
     } catch (error) {
       if (!(error instanceof Error) || !/duplicate column/i.test(error.message)) throw error;
     }
@@ -214,6 +252,15 @@ async function initializeDatabase(db: D1Database): Promise<void> {
 type BlogSettingsRow = {
   about_title: string;
   about_body: string;
+};
+
+type SuggestionRow = {
+  id: string;
+  username: string | null;
+  message: string;
+  status: SuggestionStatus;
+  created_at: string;
+  updated_at: string;
 };
 
 export async function getBlogAbout(): Promise<BlogAbout> {
@@ -241,6 +288,87 @@ export async function updateBlogAbout(input: BlogAbout): Promise<BlogAbout> {
     .run();
 
   return { title: input.title, body: input.body };
+}
+
+export async function createSuggestion(input: SuggestionInput): Promise<Suggestion> {
+  await ensureDatabase();
+  const db = getD1();
+  const id = crypto.randomUUID();
+  await db.prepare(`INSERT INTO suggestions (id, username, message, status)
+    VALUES (?, ?, ?, 'unread')`)
+    .bind(id, input.username, input.message)
+    .run();
+
+  const suggestion = await findSuggestionById(db, id);
+  if (!suggestion) throw new Error("Unable to read the newly created suggestion");
+  return suggestion;
+}
+
+export async function listSuggestions(options: SuggestionListOptions): Promise<Suggestion[]> {
+  await ensureDatabase();
+  const db = getD1();
+  const result = options.status
+    ? await db.prepare(`SELECT id, username, message, status, created_at, updated_at
+        FROM suggestions
+        WHERE status = ?
+        ORDER BY created_at DESC, id DESC
+        LIMIT ?`)
+      .bind(options.status, options.limit)
+      .all<SuggestionRow>()
+    : await db.prepare(`SELECT id, username, message, status, created_at, updated_at
+        FROM suggestions
+        ORDER BY created_at DESC, id DESC
+        LIMIT ?`)
+      .bind(options.limit)
+      .all<SuggestionRow>();
+
+  return result.results.map(suggestionFromRow);
+}
+
+export async function updateSuggestionStatus(
+  id: string,
+  status: SuggestionStatus,
+): Promise<Suggestion> {
+  await ensureDatabase();
+  const db = getD1();
+  if (!(await findSuggestionById(db, id))) throw httpError("Không tìm thấy góp ý.", 404);
+
+  await db.prepare(`UPDATE suggestions
+    SET status = ?, updated_at = CURRENT_TIMESTAMP
+    WHERE id = ?`)
+    .bind(status, id)
+    .run();
+
+  const suggestion = await findSuggestionById(db, id);
+  if (!suggestion) throw httpError("Không tìm thấy góp ý.", 404);
+  return suggestion;
+}
+
+export async function deleteSuggestion(id: string): Promise<void> {
+  await ensureDatabase();
+  const db = getD1();
+  if (!(await findSuggestionById(db, id))) throw httpError("Không tìm thấy góp ý.", 404);
+  await db.prepare("DELETE FROM suggestions WHERE id = ?").bind(id).run();
+}
+
+async function findSuggestionById(db: D1Database, id: string): Promise<Suggestion | null> {
+  const row = await db.prepare(`SELECT id, username, message, status, created_at, updated_at
+    FROM suggestions
+    WHERE id = ?`)
+    .bind(id)
+    .first<SuggestionRow>();
+  return row ? suggestionFromRow(row) : null;
+}
+
+function suggestionFromRow(row: SuggestionRow): Suggestion {
+  return {
+    id: row.id,
+    username: row.username,
+    message: row.message,
+    status: row.status,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
 }
 
 type StoredCategoryRow = { id: string; name: string; name_key: string };
@@ -309,6 +437,7 @@ type ReviewRow = {
   rating: number;
   excerpt: string;
   content: string;
+  hashtags: string;
   visited_at: string;
   is_favorite: number;
   is_featured: number;
@@ -462,6 +591,7 @@ export async function listPublishedSpots(): Promise<PublishedSpot[]> {
       reviews.rating,
       reviews.excerpt,
       reviews.content,
+      reviews.hashtags,
       reviews.visited_at,
       reviews.is_favorite,
       reviews.is_featured
@@ -508,6 +638,7 @@ export async function listPublishedSpots(): Promise<PublishedSpot[]> {
       price: row.price_label,
       excerpt: row.excerpt,
       review: row.content,
+      hashtags: parseStoredReviewHashtags(row.hashtags),
       image: gallery[0] ?? "/globe.svg",
       gallery,
       galleryCaptions: photos.map((photo) => photo.caption),
@@ -535,8 +666,8 @@ export async function createReview(input: ReviewInput): Promise<string> {
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`)
       .bind(restaurantId, input.name, slug, input.area, input.address, category.name, category.id, input.priceLabel),
     db.prepare(`INSERT INTO reviews
-      (id, restaurant_id, dish, rating, excerpt, content, visited_at, is_favorite, is_featured, status)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'published')`)
+      (id, restaurant_id, dish, rating, excerpt, content, hashtags, visited_at, is_favorite, is_featured, status)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'published')`)
       .bind(
         reviewId,
         restaurantId,
@@ -544,6 +675,7 @@ export async function createReview(input: ReviewInput): Promise<string> {
         input.rating,
         input.excerpt,
         input.content,
+        JSON.stringify(input.hashtags),
         input.visitedAt,
         input.isFavorite ? 1 : 0,
         input.isFeatured ? 1 : 0,
@@ -633,7 +765,7 @@ export async function updateReview(reviewId: string, input: ReviewInput): Promis
         review.restaurant_id,
       ),
     db.prepare(`UPDATE reviews SET
-      dish = ?, rating = ?, excerpt = ?, content = ?, visited_at = ?,
+      dish = ?, rating = ?, excerpt = ?, content = ?, hashtags = ?, visited_at = ?,
       is_favorite = ?, is_featured = ?, updated_at = CURRENT_TIMESTAMP
       WHERE id = ?`)
       .bind(
@@ -641,6 +773,7 @@ export async function updateReview(reviewId: string, input: ReviewInput): Promis
         input.rating,
         input.excerpt,
         input.content,
+        JSON.stringify(input.hashtags),
         input.visitedAt,
         input.isFavorite ? 1 : 0,
         input.isFeatured ? 1 : 0,

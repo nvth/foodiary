@@ -15,7 +15,10 @@ export default function AdminDashboard({ initialSpots }: { initialSpots: Publish
   const filtered = useMemo(() => {
     const normalized = query.trim().toLowerCase();
     if (!normalized) return spots;
-    return spots.filter((spot) => `${spot.name} ${spot.area} ${spot.cuisine} ${spot.dish}`.toLowerCase().includes(normalized));
+    return spots.filter((spot) => {
+      const hashtagText = (spot.hashtags ?? []).flatMap((tag) => [tag, `#${tag}`]).join(" ");
+      return `${spot.name} ${spot.area} ${spot.cuisine} ${spot.dish} ${hashtagText}`.toLowerCase().includes(normalized);
+    });
   }, [query, spots]);
 
   const areaCount = new Set(spots.map((spot) => spot.area)).size;
@@ -55,7 +58,7 @@ export default function AdminDashboard({ initialSpots }: { initialSpots: Publish
         <section className="admin-panel">
           <div className="admin-panel-toolbar">
             <div><h2>Danh sách bài viết</h2><p>Quản lý nội dung, ảnh và menu món.</p></div>
-            <label><span className="sr-only">Tìm bài viết</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Tìm quán, món hoặc khu vực..." /></label>
+            <label><span className="sr-only">Tìm bài viết</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Tìm quán, món, khu vực hoặc hashtag..." /></label>
           </div>
 
           <div className="admin-table-wrap">

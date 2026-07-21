@@ -36,6 +36,7 @@ export type Spot = {
   favorite?: boolean;
   featured?: boolean;
   dishes?: ReviewDish[];
+  hashtags?: string[];
 };
 
 type ReviewsResponse = { spots?: Spot[] };
@@ -50,9 +51,16 @@ type UploadResponse = {
   sizeBytes?: number;
 };
 type MutationResponse = { error?: string; id?: string; deleted?: boolean; updated?: boolean };
+type SuggestionResponse = {
+  accepted?: boolean;
+  error?: string;
+  suggestion?: { id: string; username: string | null; message: string };
+};
 
 const acceptedImageTypes = new Set(["image/jpeg", "image/png", "image/webp", "image/avif"]);
 const maxImageBytes = 8 * 1024 * 1024;
+const maxSuggestionUsernameLength = 60;
+const maxSuggestionMessageLength = 1_200;
 const fallbackAbout: BlogAbout = {
   title: "Mỗi tuần một câu chuyện ngon.",
   body: "Một email nhỏ về quán mới, món ngon và những góc phố mình vừa đi qua.",
@@ -86,6 +94,7 @@ const spots: Spot[] = [
       "https://images.unsplash.com/photo-1559314809-0d155014e29e?auto=format&fit=crop&w=1400&q=85",
     date: "18.07.2026",
     favorite: true,
+    hashtags: ["mì quảng", "miền trung"],
   },
   {
     id: 2,
@@ -102,6 +111,7 @@ const spots: Spot[] = [
     image:
       "https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?auto=format&fit=crop&w=1000&q=85",
     date: "12.07.2026",
+    hashtags: ["phở", "ăn sáng"],
   },
   {
     id: 3,
@@ -118,6 +128,7 @@ const spots: Spot[] = [
     image:
       "https://images.unsplash.com/photo-1579751626657-72bc17010498?auto=format&fit=crop&w=1000&q=85",
     date: "05.07.2026",
+    hashtags: ["pizza", "hẹn hò"],
   },
   {
     id: 4,
@@ -268,6 +279,9 @@ export function FoodBlog({ adminMode = false, editorOnly = false, initialEditorS
   );
   const [formError, setFormError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSuggestionSending, setIsSuggestionSending] = useState(false);
+  const [suggestionError, setSuggestionError] = useState("");
+  const [suggestionSuccess, setSuggestionSuccess] = useState("");
   const selectedPreviews = useMemo(
     () => selectedFiles.map((file) => ({ file, url: URL.createObjectURL(file) })),
     [selectedFiles],
@@ -366,7 +380,9 @@ export function FoodBlog({ adminMode = false, editorOnly = false, initialEditorS
       const inCategory = categoryId === "all"
         || spot.categoryId === categoryId
         || (!spot.categoryId && spot.cuisine === selectedCategory?.name);
-      const inSearch = !normalized || `${spot.name} ${spot.dish} ${spot.area} ${spot.cuisine}`.toLowerCase().includes(normalized);
+      const hashtagText = (spot.hashtags ?? []).flatMap((tag) => [tag, `#${tag}`]).join(" ");
+      const inSearch = !normalized
+        || `${spot.name} ${spot.dish} ${spot.area} ${spot.cuisine} ${hashtagText}`.toLowerCase().includes(normalized);
       return inCategory && inSearch;
     });
   }, [allSpots, categoryId, managedCategories, query]);
@@ -394,6 +410,55 @@ export function FoodBlog({ adminMode = false, editorOnly = false, initialEditorS
     selectImages(pastedImages, true);
   }
 
+  async function handleSuggestionSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const fields = new FormData(form);
+    const username = String(fields.get("username") ?? "").trim();
+    const message = String(fields.get("message") ?? "").trim();
+
+    if (username.length > maxSuggestionUsernameLength) {
+      setSuggestionError(`Tên hiển thị không được quá ${maxSuggestionUsernameLength} ký tự.`);
+      setSuggestionSuccess("");
+      return;
+    }
+    if (!message) {
+      setSuggestionError("Bạn hãy nhập nội dung góp ý nhé.");
+      setSuggestionSuccess("");
+      return;
+    }
+    if (message.length > maxSuggestionMessageLength) {
+      setSuggestionError(`Nội dung không được quá ${maxSuggestionMessageLength} ký tự.`);
+      setSuggestionSuccess("");
+      return;
+    }
+
+    setIsSuggestionSending(true);
+    setSuggestionError("");
+    setSuggestionSuccess("");
+    try {
+      const response = await fetch("/api/suggestions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: username || null,
+          message,
+          website: String(fields.get("website") ?? ""),
+        }),
+      });
+      const data = await response.json() as SuggestionResponse;
+      if (!response.ok || !data.accepted) {
+        throw new Error(data.error ?? "Chưa thể gửi góp ý lúc này.");
+      }
+      form.reset();
+      setSuggestionSuccess("Đã gửi rồi — cảm ơn bạn đã gợi ý một quán mới!");
+    } catch (error) {
+      setSuggestionError(error instanceof Error ? error.message : "Chưa thể gửi góp ý lúc này.");
+    } finally {
+      setIsSuggestionSending(false);
+    }
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = event.currentTarget;
@@ -401,6 +466,14 @@ export function FoodBlog({ adminMode = false, editorOnly = false, initialEditorS
     const selectedCategoryId = String(fields.get("categoryId") ?? "");
     if (!selectedCategoryId || !managedCategories.some((item) => item.id === selectedCategoryId)) {
       setFormError("Hãy chọn một loại món đã được tạo trong phần quản lý loại món.");
+      return;
+    }
+    const hashtags = String(fields.get("hashtags") ?? "")
+      .split(/[,\n]/u)
+      .map((tag) => tag.trim().replace(/^#+/u, "").replace(/\s+/gu, " "))
+      .filter((tag, index, tags) => Boolean(tag) && tags.findIndex((item) => item.toLocaleLowerCase("vi") === tag.toLocaleLowerCase("vi")) === index);
+    if (hashtags.length > 10 || hashtags.some((tag) => tag.length > 32)) {
+      setFormError("Dùng tối đa 10 hashtag, mỗi hashtag không quá 32 ký tự.");
       return;
     }
     const totalPhotos = existingPhotos.length + selectedFiles.length;
@@ -476,6 +549,7 @@ export function FoodBlog({ adminMode = false, editorOnly = false, initialEditorS
           visitedAt: fields.get("visitedAt"),
           isFavorite: fields.get("isFavorite") === "on",
           isFeatured: fields.get("isFeatured") === "on",
+          hashtags,
           photoKeys,
         }),
       });
@@ -630,9 +704,15 @@ export function FoodBlog({ adminMode = false, editorOnly = false, initialEditorS
         </a>
         <nav aria-label="Điều hướng chính">
           <a href="#reviews">Quán đã ăn</a>
+          <a href="#suggestions">Gửi góp ý</a>
           <a href="#about">Về blog</a>
         </nav>
-        {!adminMode && <a className="mobile-about-link" href="#about">Về blog</a>}
+        {!adminMode && (
+          <nav className="mobile-public-nav" aria-label="Điều hướng nhanh">
+            <a href="#suggestions">Góp ý quán</a>
+            <a href="#about">Về blog</a>
+          </nav>
+        )}
         {adminMode && isAdmin ? (
           <button className="add-button" onClick={startCreate}>
             <span aria-hidden="true">＋</span> Thêm quán mới
@@ -676,8 +756,8 @@ export function FoodBlog({ adminMode = false, editorOnly = false, initialEditorS
           </div>
           <label className="search">
             <span aria-hidden="true">⌕</span>
-            <span className="sr-only">Tìm quán hoặc món ăn</span>
-            <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Tìm quán, món ăn..." />
+            <span className="sr-only">Tìm quán, món ăn hoặc hashtag</span>
+            <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Tìm quán, món hoặc #hashtag..." />
           </label>
         </div>
 
@@ -707,6 +787,11 @@ export function FoodBlog({ adminMode = false, editorOnly = false, initialEditorS
                 </div>
                 <button className="card-title" onClick={() => openSpot(spot)}>{spot.name}</button>
                 <p>{spot.excerpt}</p>
+                {!!spot.hashtags?.length && (
+                  <div className="post-hashtags" aria-label="Hashtag bài viết">
+                    {spot.hashtags.map((tag) => <span key={tag}>#{tag}</span>)}
+                  </div>
+                )}
                 <div className="card-footer">
                   <span>Món nên thử: <strong>{spot.dish}</strong></span>
                   <span>~ {spot.price}/người</span>
@@ -718,6 +803,54 @@ export function FoodBlog({ adminMode = false, editorOnly = false, initialEditorS
           <div className="empty-state"><span>🍜</span><h3>Chưa tìm thấy quán phù hợp</h3><p>Thử một từ khóa hoặc nhóm món khác nhé.</p></div>
         )}
       </section>
+
+      {!adminMode && (
+        <section className="suggestion-section" id="suggestions" aria-labelledby="suggestion-title">
+          <div className="suggestion-copy">
+            <p className="eyebrow"><span /> Góp ý quán mới</p>
+            <h2 id="suggestion-title">Quán nào mình nên ghé tiếp?</h2>
+            <p>Để lại một cái tên bất kỳ và quán bạn muốn mình thử. Mình sẽ đọc trong trang quản trị.</p>
+          </div>
+          <form className="suggestion-form" onSubmit={handleSuggestionSubmit}>
+            <label htmlFor="suggestion-username">
+              <span>Username <small>không bắt buộc</small></span>
+              <input
+                id="suggestion-username"
+                name="username"
+                maxLength={maxSuggestionUsernameLength}
+                autoComplete="nickname"
+                disabled={isSuggestionSending}
+                placeholder="Ví dụ: một người mê bún"
+              />
+            </label>
+            <label htmlFor="suggestion-message">
+              <span>Nội dung góp ý</span>
+              <textarea
+                id="suggestion-message"
+                name="message"
+                required
+                maxLength={maxSuggestionMessageLength}
+                rows={5}
+                disabled={isSuggestionSending}
+                placeholder="Tên quán, địa chỉ hoặc món bạn nghĩ mình nên thử..."
+              />
+            </label>
+            <div className="suggestion-honeypot" aria-hidden="true">
+              <label htmlFor="suggestion-website">Website</label>
+              <input id="suggestion-website" name="website" tabIndex={-1} autoComplete="off" />
+            </div>
+            <div className="suggestion-form-footer">
+              <div className="suggestion-feedback" aria-live="polite">
+                {suggestionError && <p className="error" role="alert">{suggestionError}</p>}
+                {!suggestionError && suggestionSuccess && <p className="success" role="status">{suggestionSuccess}</p>}
+              </div>
+              <button type="submit" disabled={isSuggestionSending}>
+                {isSuggestionSending ? "Đang gửi..." : "Gửi góp ý →"}
+              </button>
+            </div>
+          </form>
+        </section>
+      )}
 
       <section className="about-section" id="about" aria-labelledby="about-title">
         <div className="about-heading">
@@ -773,6 +906,11 @@ export function FoodBlog({ adminMode = false, editorOnly = false, initialEditorS
               </div>
               <div className="review-kicker"><span>{selected.area} · {selected.date}</span><Stars rating={selected.rating} /></div>
               <h2 id="review-title">{selected.name}</h2>
+              {!!selected.hashtags?.length && (
+                <div className="post-hashtags review-hashtags" aria-label="Hashtag bài viết">
+                  {selected.hashtags.map((tag) => <span key={tag}>#{tag}</span>)}
+                </div>
+              )}
               <div className="review-menu">
                 <span>Menu món đã thử</span>
                 <div>
@@ -916,6 +1054,16 @@ export function FoodBlog({ adminMode = false, editorOnly = false, initialEditorS
               <label>Ngày ghé quán<input name="visitedAt" type="date" required defaultValue={editingSpot?.date ?? new Date().toISOString().slice(0, 10)} /></label>
               <label>Mô tả ngắn<textarea name="excerpt" required maxLength={320} rows={2} defaultValue={editingSpot?.excerpt} placeholder="Một câu ngắn hiển thị trên trang chủ..." /></label>
               <label>Bài review<textarea name="content" required maxLength={8000} rows={6} defaultValue={editingSpot?.review} placeholder="Kể kỹ hơn về món ăn, không gian và trải nghiệm..." /></label>
+              <label className="hashtag-field">
+                Hashtag
+                <input
+                  name="hashtags"
+                  maxLength={400}
+                  defaultValue={editingSpot?.hashtags?.map((tag) => `#${tag}`).join(", ")}
+                  placeholder="#bún riêu, #Hà Nội, #ăn sáng"
+                />
+                <small>Tối đa 10 hashtag, ngăn cách bằng dấu phẩy. Người đọc có thể nhập hashtag vào ô tìm kiếm.</small>
+              </label>
               <label className="photo-upload">
                 <span>Ảnh món ăn · từ 1 đến 5 ảnh</span>
                 <input

@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { index, integer, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { check, index, integer, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 export const blogSettings = sqliteTable("blog_settings", {
   id: text("id").primaryKey(),
@@ -52,6 +52,7 @@ export const reviews = sqliteTable(
     rating: real("rating").notNull(),
     excerpt: text("excerpt").notNull(),
     content: text("content").notNull(),
+    hashtags: text("hashtags", { mode: "json" }).$type<string[]>().notNull().default(sql`'[]'`),
     visitedAt: text("visited_at").notNull(),
     isFavorite: integer("is_favorite", { mode: "boolean" }).notNull().default(false),
     isFeatured: integer("is_featured", { mode: "boolean" }).notNull().default(false),
@@ -62,6 +63,23 @@ export const reviews = sqliteTable(
   (table) => [
     index("reviews_restaurant_idx").on(table.restaurantId),
     index("reviews_status_visited_idx").on(table.status, table.visitedAt),
+  ],
+);
+
+export const suggestions = sqliteTable(
+  "suggestions",
+  {
+    id: text("id").primaryKey(),
+    username: text("username"),
+    message: text("message").notNull(),
+    status: text("status", { enum: ["unread", "read"] }).notNull().default("unread"),
+    createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => [
+    index("suggestions_created_idx").on(table.createdAt),
+    index("suggestions_status_created_idx").on(table.status, table.createdAt),
+    check("suggestions_status_check", sql`${table.status} IN ('unread', 'read')`),
   ],
 );
 

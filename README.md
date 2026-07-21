@@ -7,9 +7,10 @@ Blog ẩm thực cá nhân chạy trên Vinext và Cloudflare Workers. Nội dun
 - `app/`: giao diện public và các API route.
 - `db/schema.ts`: schema D1 bằng Drizzle.
 - `drizzle/`: migration SQL được commit cùng source.
-- `app/api/reviews`: dữ liệu review công khai.
+- `app/api/reviews`: dữ liệu review và hashtag công khai.
+- `app/api/suggestions`: nhận góp ý quán mới từ độc giả.
 - `app/api/admin/*`: upload ảnh và thao tác ghi có kiểm tra email tác giả.
-- `/admin`: giao diện thêm, sửa, xóa dành riêng cho tác giả; trang chủ luôn chỉ đọc.
+- `/admin`: giao diện quản lý bài viết, loại món, góp ý và phần giới thiệu dành riêng cho tác giả.
 - `app/api/media`: đọc ảnh từ R2 với cache dài hạn.
 - `.openai/hosting.json`: khai báo logical bindings `DB` và `MEDIA` cho Cloudflare Sites.
 
@@ -59,7 +60,7 @@ Có thể liệt kê nhiều email, phân tách bằng dấu phẩy. Không đ�
 
 ## Bảo vệ khu vực viết bài
 
-Public API chỉ cho phép đọc. Các endpoint dưới `/api/admin/*` kiểm tra email phía server từ một trong hai header:
+Trang chủ chỉ cho phép độc giả đọc nội dung review. Ngoại lệ duy nhất là `POST /api/suggestions`, dùng để gửi username tùy chọn và nội dung góp ý đã được giới hạn/kiểm tra phía server; độc giả không thể đọc lại danh sách tin. Các endpoint dưới `/api/admin/*` kiểm tra email phía server từ một trong hai header:
 
 - `Cf-Access-Authenticated-User-Email` khi dùng Cloudflare Access.
 - `oai-authenticated-user-email` khi chạy qua Sites có xác thực workspace.

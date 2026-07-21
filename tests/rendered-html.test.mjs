@@ -14,12 +14,16 @@ test("ships the Vietnamese food journal experience", async () => {
   assert.match(page, /\/api\/reviews/);
   assert.match(page, /\/api\/categories/);
   assert.match(page, /\/api\/about/);
+  assert.match(page, /\/api\/suggestions/);
+  assert.match(page, /Góp ý quán mới/i);
+  assert.match(page, /name="hashtags"/);
+  assert.match(page, /#hashtag/i);
   assert.match(page, /Về blog/i);
   assert.doesNotMatch(page, /codex-preview|Your site is taking shape|react-loading-skeleton/i);
 });
 
 test("declares Cloudflare-native persistence and protected mutations", async () => {
-  const [hosting, schema, adminRoute, categoryRoute, publicCategoryRoute, adminAboutRoute, publicAboutRoute, adminSidebar, mediaRoute, adminPage, adminAuth, publicPage, envExample] = await Promise.all([
+  const [hosting, schema, adminRoute, categoryRoute, publicCategoryRoute, adminAboutRoute, publicAboutRoute, publicSuggestionRoute, adminSuggestionRoute, adminSuggestionPage, adminSidebar, mediaRoute, adminPage, adminAuth, publicPage, envExample] = await Promise.all([
     readFile(new URL("../.openai/hosting.json", import.meta.url), "utf8"),
     readFile(new URL("../db/schema.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/api/admin/reviews/route.ts", import.meta.url), "utf8"),
@@ -27,6 +31,9 @@ test("declares Cloudflare-native persistence and protected mutations", async () 
     readFile(new URL("../app/api/categories/route.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/api/admin/about/route.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/api/about/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/suggestions/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/admin/suggestions/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/admin/suggestions/page.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/admin/admin-sidebar.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/api/admin/media/route.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/admin/page.tsx", import.meta.url), "utf8"),
@@ -44,12 +51,19 @@ test("declares Cloudflare-native persistence and protected mutations", async () 
   assert.match(schema, /sqliteTable\(\s*"photos"/);
   assert.match(schema, /sqliteTable\(\s*"cuisine_categories"/);
   assert.match(schema, /sqliteTable\(\s*"blog_settings"/);
+  assert.match(schema, /sqliteTable\(\s*"suggestions"/);
+  assert.match(schema, /hashtags: text\("hashtags"/);
   assert.match(adminRoute, /requireAdmin\(request\)/);
   assert.match(categoryRoute, /requireAdmin\(request\)/);
   assert.match(publicCategoryRoute, /listCategories/);
   assert.match(adminAboutRoute, /requireAdmin\(request\)/);
   assert.match(publicAboutRoute, /getBlogAbout/);
+  assert.match(publicSuggestionRoute, /export async function POST/);
+  assert.match(adminSuggestionRoute, /requireAdmin\(request\)/);
+  assert.match(adminSuggestionPage, /requireAdminPage\("\/admin\/suggestions"\)/);
+  assert.match(adminSidebar, /\/admin\/suggestions/);
   assert.match(adminSidebar, /\/admin\/about/);
+  assert.doesNotMatch(adminSidebar, /href="\/admin\/editor"/);
   assert.match(mediaRoute, /MAX_IMAGE_BYTES/);
   assert.match(adminPage, /<AdminDashboard/);
   assert.match(adminAuth, /getAdminState\(request\)/);
