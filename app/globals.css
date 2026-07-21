@@ -38,7 +38,7 @@ a { color: inherit; text-decoration: none; }
 .admin-dashboard { min-height: 100vh; display: grid; grid-template-columns: 236px minmax(0, 1fr); background: #f2f0ea; color: #292923; }
 .admin-sidebar { position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; padding: 34px 25px 24px; border-right: 1px solid #ddd8ce; background: #23251f; color: #f5f0e6; }
 .admin-brand { display: flex; align-items: center; gap: 12px; font-size: 13px; line-height: 1.25; }
-.admin-brand > span { width: 39px; height: 39px; display: grid; place-items: center; border-radius: 50%; background: var(--red); color: white; font: italic 500 24px var(--font-serif); }
+.admin-logo { flex: 0 0 48px; width: 48px; height: 46px; display: block; object-fit: contain; }
 .admin-sidebar nav { display: grid; gap: 7px; margin-top: 50px; }
 .admin-sidebar nav a { padding: 11px 13px; border-radius: 4px; color: #bbbdb5; font-size: 12px; transition: background .2s, color .2s; }
 .admin-sidebar nav a:hover, .admin-sidebar nav a.active { background: rgba(255,255,255,.09); color: white; }
@@ -103,9 +103,8 @@ a { color: inherit; text-decoration: none; }
 
 .brand { display: inline-flex; align-items: center; gap: 11px; font-weight: 700; font-size: 16px; width: fit-content; }
 .brand-mark {
-  width: 35px; height: 35px; display: grid; place-items: center;
-  border-radius: 50%; background: var(--red); color: #fff7e8;
-  font-family: var(--font-serif); font-size: 23px; font-style: italic;
+  flex: 0 0 44px; width: 44px; height: 42px; display: block;
+  object-fit: contain;
 }
 .topbar nav { display: flex; gap: 38px; color: #5f5d55; font-size: 13px; }
 .topbar nav a { transition: color .2s ease; }
@@ -217,7 +216,7 @@ h1 em { color: var(--red); font-weight: 400; }
 .newsletter button { border: 0; background: transparent; color: white; cursor: pointer; padding: 13px 0 13px 15px; font-weight: 600; }
 footer { padding: 32px clamp(24px, 5vw, 78px); background: #24241f; color: #cbc6ba; display: flex; align-items: center; justify-content: space-between; gap: 24px; font-size: 11px; }
 .footer-brand { color: white; }
-.footer-brand .brand-mark { background: #f4ead6; color: var(--red); }
+.footer-brand .brand-mark { background: transparent; }
 footer p { margin: 0; }
 
 .modal-backdrop { position: fixed; z-index: 100; inset: 0; background: rgba(26,24,19,.75); backdrop-filter: blur(5px); display: grid; place-items: center; padding: 24px; animation: fadeIn .2s ease; }
@@ -240,7 +239,7 @@ footer p { margin: 0; }
 .mobile-photo-lightbox { display: none; }
 .review-body { min-height: 0; overflow: auto; padding: 28px clamp(28px, 3.6vw, 48px) 38px; display: flex; flex-direction: column; justify-content: flex-start; }
 .post-author { display: flex; align-items: center; gap: 11px; padding: 0 44px 20px 0; margin-bottom: 30px; border-bottom: 1px solid var(--line); }
-.author-avatar { flex: 0 0 36px; width: 36px; height: 36px; display: grid; place-items: center; border-radius: 50%; background: var(--red); color: #fff7e8; font: italic 500 22px var(--font-serif); }
+.author-avatar { flex: 0 0 42px; width: 42px; height: 40px; display: block; object-fit: contain; }
 .post-author > span:nth-child(2) { display: flex; flex: 1; flex-direction: column; gap: 3px; }
 .post-author strong { font-size: 12px; }
 .post-author small { color: var(--muted); font-size: 9px; }

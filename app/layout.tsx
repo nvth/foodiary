@@ -23,7 +23,7 @@ export async function generateMetadata(): Promise<Metadata> {
     metadataBase,
     title,
     description,
-    icons: { icon: "/favicon.svg", shortcut: "/favicon.svg" },
+    icons: { icon: "/frog-logo.png", shortcut: "/frog-logo.png" },
     openGraph: {
       type: "website",
       locale: "vi_VN",

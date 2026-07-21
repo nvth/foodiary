@@ -38,7 +38,7 @@ export default function AdminDashboard({ initialSpots }: { initialSpots: Publish
   return (
     <main className="admin-dashboard">
       <aside className="admin-sidebar">
-        <Link className="admin-brand" href="/admin"><span>ă</span><strong>Ăn đâu<br />hôm nay?</strong></Link>
+        <Link className="admin-brand" href="/admin"><img className="admin-logo" src="/frog-logo.png" alt="" aria-hidden="true" /><strong>Ăn đâu<br />hôm nay?</strong></Link>
         <nav aria-label="Điều hướng quản trị">
           <a className="active" href="#posts">Bài viết</a>
           <Link href="/admin/editor">Thêm bài mới</Link>

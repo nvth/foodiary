@@ -577,7 +577,7 @@ export function FoodBlog({ adminMode = false, editorOnly = false, initialEditorS
       )}
       <header className="topbar">
         <a className="brand" href="#top" aria-label="Ăn đâu hôm nay - Trang chủ">
-          <span className="brand-mark" aria-hidden="true">ă</span>
+          <img className="brand-mark" src="/frog-logo.png" alt="" aria-hidden="true" />
           <span>Ăn đâu hôm nay?</span>
         </a>
         <nav aria-label="Điều hướng chính">
@@ -680,7 +680,7 @@ export function FoodBlog({ adminMode = false, editorOnly = false, initialEditorS
       </section>
 
       <footer>
-        <a className="brand footer-brand" href="#top"><span className="brand-mark">ă</span><span>Ăn đâu hôm nay?</span></a>
+        <a className="brand footer-brand" href="#top"><img className="brand-mark" src="/frog-logo.png" alt="" aria-hidden="true" /><span>Ăn đâu hôm nay?</span></a>
         <p>Ăn thật lòng, kể thật vui. © 2026</p>
         <a href="#top">Lên đầu trang ↑</a>
       </footer>
@@ -719,7 +719,7 @@ export function FoodBlog({ adminMode = false, editorOnly = false, initialEditorS
             </div>
             <div className="review-body">
               <div className="post-author">
-                <span className="author-avatar" aria-hidden="true">ă</span>
+                <img className="author-avatar" src="/frog-logo.png" alt="" aria-hidden="true" />
                 <span><strong>andauhomnay</strong><small>{selected.area} · Nhật ký vị giác</small></span>
                 <button aria-label="Lưu bài viết">♡</button>
               </div>
