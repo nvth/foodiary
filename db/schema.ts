@@ -1,6 +1,13 @@
 import { sql } from "drizzle-orm";
 import { index, integer, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
+export const blogSettings = sqliteTable("blog_settings", {
+  id: text("id").primaryKey(),
+  aboutTitle: text("about_title").notNull(),
+  aboutBody: text("about_body").notNull(),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+});
+
 export const cuisineCategories = sqliteTable(
   "cuisine_categories",
   {

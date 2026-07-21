@@ -3,7 +3,7 @@
 import Link from "next/link";
 
 type AdminSidebarProps = {
-  active: "posts" | "categories";
+  active: "posts" | "categories" | "about";
 };
 
 export default function AdminSidebar({ active }: AdminSidebarProps) {
@@ -16,6 +16,7 @@ export default function AdminSidebar({ active }: AdminSidebarProps) {
       <nav aria-label="Điều hướng quản trị">
         <Link className={active === "posts" ? "active" : undefined} aria-current={active === "posts" ? "page" : undefined} href="/admin">Bài viết</Link>
         <Link className={active === "categories" ? "active" : undefined} aria-current={active === "categories" ? "page" : undefined} href="/admin/categories">Loại món</Link>
+        <Link className={active === "about" ? "active" : undefined} aria-current={active === "about" ? "page" : undefined} href="/admin/about">Về blog</Link>
         <Link href="/admin/editor">Thêm bài mới</Link>
         <Link href="/">Xem trang chủ ↗</Link>
       </nav>

@@ -1,5 +1,15 @@
 import { env } from "cloudflare:workers";
+import type { AboutInput } from "@/lib/about-validation";
 import { normalizeCategoryKey, normalizeCategoryName, type CategoryInput } from "@/lib/category-validation";
+
+const BLOG_SETTINGS_ID = "main";
+
+export type BlogAbout = AboutInput;
+
+export const DEFAULT_BLOG_ABOUT: BlogAbout = Object.freeze({
+  title: "Mỗi tuần một câu chuyện ngon.",
+  body: "Một email nhỏ về quán mới, món ngon và những góc phố mình vừa đi qua.",
+});
 
 export type ReviewInput = {
   name: string;
@@ -82,6 +92,10 @@ export function getR2(): R2Bucket {
   return bucket;
 }
 
+export function hasD1Database(): boolean {
+  return Boolean(getBindings().DB);
+}
+
 export function hasCloudflareStorage(): boolean {
   const bindings = getBindings();
   return Boolean(bindings.DB && bindings.MEDIA);
@@ -103,6 +117,15 @@ export async function ensureDatabase(): Promise<void> {
 async function initializeDatabase(db: D1Database): Promise<void> {
   await db.batch([
     db.prepare("PRAGMA foreign_keys = ON"),
+    db.prepare(`CREATE TABLE IF NOT EXISTS blog_settings (
+      id TEXT PRIMARY KEY NOT NULL,
+      about_title TEXT NOT NULL,
+      about_body TEXT NOT NULL,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )`),
+    db.prepare(`INSERT OR IGNORE INTO blog_settings (id, about_title, about_body)
+      VALUES (?, ?, ?)`)
+      .bind(BLOG_SETTINGS_ID, DEFAULT_BLOG_ABOUT.title, DEFAULT_BLOG_ABOUT.body),
     db.prepare(`CREATE TABLE IF NOT EXISTS cuisine_categories (
       id TEXT PRIMARY KEY NOT NULL,
       name TEXT NOT NULL UNIQUE,
@@ -186,6 +209,38 @@ async function initializeDatabase(db: D1Database): Promise<void> {
       WHEN NEW.category_id IS NULL OR trim(NEW.category_id) = ''
       BEGIN SELECT RAISE(ABORT, 'restaurants.category_id is required'); END`),
   ]);
+}
+
+type BlogSettingsRow = {
+  about_title: string;
+  about_body: string;
+};
+
+export async function getBlogAbout(): Promise<BlogAbout> {
+  await ensureDatabase();
+  const row = await getD1()
+    .prepare("SELECT about_title, about_body FROM blog_settings WHERE id = ?")
+    .bind(BLOG_SETTINGS_ID)
+    .first<BlogSettingsRow>();
+
+  return row
+    ? { title: row.about_title, body: row.about_body }
+    : { ...DEFAULT_BLOG_ABOUT };
+}
+
+export async function updateBlogAbout(input: BlogAbout): Promise<BlogAbout> {
+  await ensureDatabase();
+  await getD1()
+    .prepare(`INSERT INTO blog_settings (id, about_title, about_body, updated_at)
+      VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+      ON CONFLICT(id) DO UPDATE SET
+        about_title = excluded.about_title,
+        about_body = excluded.about_body,
+        updated_at = CURRENT_TIMESTAMP`)
+    .bind(BLOG_SETTINGS_ID, input.title, input.body)
+    .run();
+
+  return { title: input.title, body: input.body };
 }
 
 type StoredCategoryRow = { id: string; name: string; name_key: string };

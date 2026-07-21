@@ -4,6 +4,7 @@
 
 import { ClipboardEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import type { BlogAbout } from "@/db";
 
 type StoredPhoto = {
   objectKey: string;
@@ -40,6 +41,7 @@ export type Spot = {
 type ReviewsResponse = { spots?: Spot[] };
 export type CategoryOption = { id: string; name: string; usageCount: number };
 type CategoriesResponse = { categories?: CategoryOption[] };
+type AboutResponse = { about?: BlogAbout; mode?: "cloudflare" | "demo" };
 type SessionResponse = { isAdmin?: boolean };
 type UploadResponse = {
   error?: string;
@@ -51,6 +53,10 @@ type MutationResponse = { error?: string; id?: string; deleted?: boolean; update
 
 const acceptedImageTypes = new Set(["image/jpeg", "image/png", "image/webp", "image/avif"]);
 const maxImageBytes = 8 * 1024 * 1024;
+const fallbackAbout: BlogAbout = {
+  title: "Mỗi tuần một câu chuyện ngon.",
+  body: "Một email nhỏ về quán mới, món ngon và những góc phố mình vừa đi qua.",
+};
 
 function imageSelectionError(files: File[], totalFiles = files.length): string | null {
   if (totalFiles > 5) return "Chỉ được dùng tối đa 5 ảnh.";
@@ -247,6 +253,7 @@ export function FoodBlog({ adminMode = false, editorOnly = false, initialEditorS
   const [managedCategories, setManagedCategories] = useState<CategoryOption[]>(
     initialCategories ?? (adminMode ? [] : demoCategories),
   );
+  const [about, setAbout] = useState<BlogAbout>(fallbackAbout);
   const [categoriesLoaded, setCategoriesLoaded] = useState(Boolean(initialCategories));
   const [isAdmin, setIsAdmin] = useState(adminMode);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -284,6 +291,14 @@ export function FoodBlog({ adminMode = false, editorOnly = false, initialEditorS
     const sessionRequest: Promise<SessionResponse> = adminMode
       ? fetch("/api/admin/session", { headers: { accept: "application/json" } }).then((response) => response.json() as Promise<SessionResponse>)
       : Promise.resolve({ isAdmin: false });
+    const aboutRequest: Promise<AboutResponse> = adminMode
+      ? Promise.resolve({})
+      : fetch("/api/about", { headers: { accept: "application/json" } })
+          .then((response) => {
+            if (!response.ok) throw new Error("Không thể tải phần giới thiệu blog.");
+            return response.json() as Promise<AboutResponse>;
+          })
+          .catch(() => ({}));
     Promise.all([
       fetch("/api/reviews", { headers: { accept: "application/json" } }).then((response) => response.json() as Promise<ReviewsResponse>),
       fetch("/api/categories", { headers: { accept: "application/json" } }).then((response) => {
@@ -291,8 +306,9 @@ export function FoodBlog({ adminMode = false, editorOnly = false, initialEditorS
         return response.json() as Promise<CategoriesResponse>;
       }).catch(() => ({} as CategoriesResponse)),
       sessionRequest,
+      aboutRequest,
     ])
-      .then(([reviewsData, categoriesData, sessionData]) => {
+      .then(([reviewsData, categoriesData, sessionData, aboutData]) => {
         if (cancelled) return;
         if (Array.isArray(reviewsData.spots) && reviewsData.spots.length > 0) {
           setAllSpots(reviewsData.spots);
@@ -305,6 +321,9 @@ export function FoodBlog({ adminMode = false, editorOnly = false, initialEditorS
         }
         setCategoriesLoaded(true);
         setIsAdmin(adminMode && Boolean(sessionData.isAdmin));
+        if (aboutData.about?.title?.trim() && aboutData.about.body?.trim()) {
+          setAbout(aboutData.about);
+        }
       })
       .catch(() => {
         // The static demo remains usable when Cloudflare bindings are not active yet.
@@ -613,6 +632,7 @@ export function FoodBlog({ adminMode = false, editorOnly = false, initialEditorS
           <a href="#reviews">Quán đã ăn</a>
           <a href="#about">Về blog</a>
         </nav>
+        {!adminMode && <a className="mobile-about-link" href="#about">Về blog</a>}
         {adminMode && isAdmin ? (
           <button className="add-button" onClick={startCreate}>
             <span aria-hidden="true">＋</span> Thêm quán mới
@@ -699,16 +719,12 @@ export function FoodBlog({ adminMode = false, editorOnly = false, initialEditorS
         )}
       </section>
 
-      <section className="newsletter" id="about">
-        <div>
-          <p className="eyebrow light"><span /> Ghi chú cuối tuần</p>
-          <h2>Mỗi tuần một câu chuyện ngon.</h2>
+      <section className="about-section" id="about" aria-labelledby="about-title">
+        <div className="about-heading">
+          <p className="eyebrow light"><span /> Về blog</p>
+          <h2 id="about-title">{about.title}</h2>
         </div>
-        <p>Một email nhỏ về quán mới, món ngon và những góc phố mình vừa đi qua.</p>
-        <form onSubmit={(event) => event.preventDefault()}>
-          <input type="email" aria-label="Email của bạn" placeholder="email@cuaban.com" />
-          <button type="submit">Đăng ký <span aria-hidden="true">→</span></button>
-        </form>
+        <p className="about-body">{about.body}</p>
       </section>
 
       <footer>
