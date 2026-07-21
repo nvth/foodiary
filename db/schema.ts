@@ -1,6 +1,18 @@
 import { sql } from "drizzle-orm";
 import { index, integer, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
+export const cuisineCategories = sqliteTable(
+  "cuisine_categories",
+  {
+    id: text("id").primaryKey(),
+    name: text("name").notNull().unique(),
+    nameKey: text("name_key").notNull().unique(),
+    createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => [index("cuisine_categories_name_idx").on(table.name)],
+);
+
 export const restaurants = sqliteTable(
   "restaurants",
   {
@@ -10,6 +22,7 @@ export const restaurants = sqliteTable(
     area: text("area").notNull(),
     address: text("address").notNull(),
     cuisine: text("cuisine").notNull(),
+    categoryId: text("category_id").references(() => cuisineCategories.id, { onDelete: "restrict" }),
     priceLabel: text("price_label").notNull(),
     createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
     updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
@@ -17,6 +30,7 @@ export const restaurants = sqliteTable(
   (table) => [
     index("restaurants_area_idx").on(table.area),
     index("restaurants_cuisine_idx").on(table.cuisine),
+    index("restaurants_category_idx").on(table.categoryId),
   ],
 );
 

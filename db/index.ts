@@ -1,10 +1,11 @@
 import { env } from "cloudflare:workers";
+import { normalizeCategoryKey, normalizeCategoryName, type CategoryInput } from "@/lib/category-validation";
 
 export type ReviewInput = {
   name: string;
   area: string;
   address: string;
-  cuisine: string;
+  categoryId: string;
   priceLabel: string;
   dish: string;
   rating: number;
@@ -27,6 +28,7 @@ export type PublishedSpot = {
   name: string;
   area: string;
   address: string;
+  categoryId: string;
   cuisine: string;
   dish: string;
   rating: number;
@@ -47,6 +49,12 @@ export type PublishedSpot = {
   favorite: boolean;
   featured: boolean;
   dishes: Array<{ id: string; name: string; photoIndex: number }>;
+};
+
+export type CuisineCategory = {
+  id: string;
+  name: string;
+  usageCount: number;
 };
 
 type Bindings = {
@@ -83,60 +91,7 @@ export async function ensureDatabase(): Promise<void> {
   if (schemaReady) return schemaReady;
 
   const db = getD1();
-  schemaReady = db
-    .batch([
-      db.prepare("PRAGMA foreign_keys = ON"),
-      db.prepare(`CREATE TABLE IF NOT EXISTS restaurants (
-        id TEXT PRIMARY KEY NOT NULL,
-        name TEXT NOT NULL,
-        slug TEXT NOT NULL UNIQUE,
-        area TEXT NOT NULL,
-        address TEXT NOT NULL,
-        cuisine TEXT NOT NULL,
-        price_label TEXT NOT NULL,
-        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-      )`),
-      db.prepare(`CREATE TABLE IF NOT EXISTS reviews (
-        id TEXT PRIMARY KEY NOT NULL,
-        restaurant_id TEXT NOT NULL REFERENCES restaurants(id) ON DELETE CASCADE,
-        dish TEXT NOT NULL,
-        rating REAL NOT NULL CHECK (rating >= 1 AND rating <= 5),
-        excerpt TEXT NOT NULL,
-        content TEXT NOT NULL,
-        visited_at TEXT NOT NULL,
-        is_favorite INTEGER NOT NULL DEFAULT 0,
-        is_featured INTEGER NOT NULL DEFAULT 0,
-        status TEXT NOT NULL DEFAULT 'published' CHECK (status IN ('draft', 'published')),
-        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-      )`),
-      db.prepare(`CREATE TABLE IF NOT EXISTS photos (
-        id TEXT PRIMARY KEY NOT NULL,
-        review_id TEXT NOT NULL REFERENCES reviews(id) ON DELETE CASCADE,
-        object_key TEXT NOT NULL UNIQUE,
-        alt_text TEXT NOT NULL DEFAULT '',
-        content_type TEXT NOT NULL,
-        size_bytes INTEGER NOT NULL,
-        sort_order INTEGER NOT NULL DEFAULT 0,
-        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-      )`),
-      db.prepare(`CREATE TABLE IF NOT EXISTS review_dishes (
-        id TEXT PRIMARY KEY NOT NULL,
-        review_id TEXT NOT NULL REFERENCES reviews(id) ON DELETE CASCADE,
-        name TEXT NOT NULL,
-        photo_sort_order INTEGER NOT NULL DEFAULT 0,
-        sort_order INTEGER NOT NULL DEFAULT 0,
-        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-      )`),
-      db.prepare("CREATE INDEX IF NOT EXISTS restaurants_area_idx ON restaurants(area)"),
-      db.prepare("CREATE INDEX IF NOT EXISTS restaurants_cuisine_idx ON restaurants(cuisine)"),
-      db.prepare("CREATE INDEX IF NOT EXISTS reviews_restaurant_idx ON reviews(restaurant_id)"),
-      db.prepare("CREATE INDEX IF NOT EXISTS reviews_status_visited_idx ON reviews(status, visited_at)"),
-      db.prepare("CREATE INDEX IF NOT EXISTS photos_review_sort_idx ON photos(review_id, sort_order)"),
-      db.prepare("CREATE INDEX IF NOT EXISTS review_dishes_review_sort_idx ON review_dishes(review_id, sort_order)"),
-    ])
-    .then(() => undefined)
+  schemaReady = initializeDatabase(db)
     .catch((error) => {
       schemaReady = null;
       throw error;
@@ -145,11 +100,154 @@ export async function ensureDatabase(): Promise<void> {
   return schemaReady;
 }
 
+async function initializeDatabase(db: D1Database): Promise<void> {
+  await db.batch([
+    db.prepare("PRAGMA foreign_keys = ON"),
+    db.prepare(`CREATE TABLE IF NOT EXISTS cuisine_categories (
+      id TEXT PRIMARY KEY NOT NULL,
+      name TEXT NOT NULL UNIQUE,
+      name_key TEXT NOT NULL UNIQUE,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )`),
+    db.prepare(`CREATE TABLE IF NOT EXISTS restaurants (
+      id TEXT PRIMARY KEY NOT NULL,
+      name TEXT NOT NULL,
+      slug TEXT NOT NULL UNIQUE,
+      area TEXT NOT NULL,
+      address TEXT NOT NULL,
+      cuisine TEXT NOT NULL,
+      category_id TEXT REFERENCES cuisine_categories(id) ON DELETE RESTRICT,
+      price_label TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )`),
+    db.prepare(`CREATE TABLE IF NOT EXISTS reviews (
+      id TEXT PRIMARY KEY NOT NULL,
+      restaurant_id TEXT NOT NULL REFERENCES restaurants(id) ON DELETE CASCADE,
+      dish TEXT NOT NULL,
+      rating REAL NOT NULL CHECK (rating >= 1 AND rating <= 5),
+      excerpt TEXT NOT NULL,
+      content TEXT NOT NULL,
+      visited_at TEXT NOT NULL,
+      is_favorite INTEGER NOT NULL DEFAULT 0,
+      is_featured INTEGER NOT NULL DEFAULT 0,
+      status TEXT NOT NULL DEFAULT 'published' CHECK (status IN ('draft', 'published')),
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )`),
+    db.prepare(`CREATE TABLE IF NOT EXISTS photos (
+      id TEXT PRIMARY KEY NOT NULL,
+      review_id TEXT NOT NULL REFERENCES reviews(id) ON DELETE CASCADE,
+      object_key TEXT NOT NULL UNIQUE,
+      alt_text TEXT NOT NULL DEFAULT '',
+      content_type TEXT NOT NULL,
+      size_bytes INTEGER NOT NULL,
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )`),
+    db.prepare(`CREATE TABLE IF NOT EXISTS review_dishes (
+      id TEXT PRIMARY KEY NOT NULL,
+      review_id TEXT NOT NULL REFERENCES reviews(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      photo_sort_order INTEGER NOT NULL DEFAULT 0,
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )`),
+    db.prepare("CREATE INDEX IF NOT EXISTS cuisine_categories_name_idx ON cuisine_categories(name)"),
+    db.prepare("CREATE INDEX IF NOT EXISTS restaurants_area_idx ON restaurants(area)"),
+    db.prepare("CREATE INDEX IF NOT EXISTS restaurants_cuisine_idx ON restaurants(cuisine)"),
+    db.prepare("CREATE INDEX IF NOT EXISTS reviews_restaurant_idx ON reviews(restaurant_id)"),
+    db.prepare("CREATE INDEX IF NOT EXISTS reviews_status_visited_idx ON reviews(status, visited_at)"),
+    db.prepare("CREATE INDEX IF NOT EXISTS photos_review_sort_idx ON photos(review_id, sort_order)"),
+    db.prepare("CREATE INDEX IF NOT EXISTS review_dishes_review_sort_idx ON review_dishes(review_id, sort_order)"),
+  ]);
+
+  const columns = await db.prepare("PRAGMA table_info(restaurants)").all<{ name: string }>();
+  if (!columns.results.some((column) => column.name === "category_id")) {
+    try {
+      await db
+        .prepare("ALTER TABLE restaurants ADD COLUMN category_id TEXT REFERENCES cuisine_categories(id) ON DELETE RESTRICT")
+        .run();
+    } catch (error) {
+      if (!(error instanceof Error) || !/duplicate column/i.test(error.message)) throw error;
+    }
+  }
+
+  await backfillRestaurantCategories(db);
+  await db.batch([
+    db.prepare("CREATE INDEX IF NOT EXISTS restaurants_category_idx ON restaurants(category_id)"),
+    db.prepare(`CREATE TRIGGER IF NOT EXISTS restaurants_category_required_insert
+      BEFORE INSERT ON restaurants
+      WHEN NEW.category_id IS NULL OR trim(NEW.category_id) = ''
+      BEGIN SELECT RAISE(ABORT, 'restaurants.category_id is required'); END`),
+    db.prepare(`CREATE TRIGGER IF NOT EXISTS restaurants_category_required_update
+      BEFORE UPDATE ON restaurants
+      WHEN NEW.category_id IS NULL OR trim(NEW.category_id) = ''
+      BEGIN SELECT RAISE(ABORT, 'restaurants.category_id is required'); END`),
+  ]);
+}
+
+type StoredCategoryRow = { id: string; name: string; name_key: string };
+type RestaurantCategoryRow = { id: string; cuisine: string; category_id: string | null };
+
+async function backfillRestaurantCategories(db: D1Database): Promise<void> {
+  const [categoryResult, restaurantResult] = await Promise.all([
+    db.prepare("SELECT id, name, name_key FROM cuisine_categories ORDER BY created_at, id").all<StoredCategoryRow>(),
+    db.prepare("SELECT id, cuisine, category_id FROM restaurants ORDER BY created_at, id").all<RestaurantCategoryRow>(),
+  ]);
+  const existingByKey = new Map(
+    categoryResult.results.map((category) => [normalizeCategoryKey(category.name), category]),
+  );
+  const namesToCreate = new Map<string, string>();
+
+  for (const restaurant of restaurantResult.results) {
+    if (restaurant.category_id) continue;
+    const name = normalizeCategoryName(restaurant.cuisine) || "Chưa phân loại";
+    const key = normalizeCategoryKey(name);
+    if (!existingByKey.has(key)) namesToCreate.set(key, name);
+  }
+
+  if (namesToCreate.size) {
+    await db.batch(
+      [...namesToCreate].map(([nameKey, name]) =>
+        db.prepare(`INSERT OR IGNORE INTO cuisine_categories (id, name, name_key)
+          VALUES (?, ?, ?)`)
+          .bind(crypto.randomUUID(), name, nameKey),
+      ),
+    );
+  }
+
+  const refreshedCategories = namesToCreate.size
+    ? await db.prepare("SELECT id, name, name_key FROM cuisine_categories ORDER BY created_at, id").all<StoredCategoryRow>()
+    : categoryResult;
+  const categoryByKey = new Map(
+    refreshedCategories.results.map((category) => [normalizeCategoryKey(category.name), category]),
+  );
+  const updates = restaurantResult.results
+    .filter((restaurant) => !restaurant.category_id)
+    .map((restaurant) => {
+      const name = normalizeCategoryName(restaurant.cuisine) || "Chưa phân loại";
+      const category = categoryByKey.get(normalizeCategoryKey(name));
+      if (!category) throw new Error(`Không thể tạo loại món cho nhà hàng ${restaurant.id}.`);
+      return db.prepare("UPDATE restaurants SET category_id = ?, cuisine = ? WHERE id = ? AND category_id IS NULL")
+        .bind(category.id, category.name, restaurant.id);
+    });
+  if (updates.length) await db.batch(updates);
+
+  await db.prepare(`UPDATE restaurants
+    SET cuisine = (SELECT name FROM cuisine_categories WHERE cuisine_categories.id = restaurants.category_id)
+    WHERE category_id IS NOT NULL
+      AND EXISTS (SELECT 1 FROM cuisine_categories WHERE cuisine_categories.id = restaurants.category_id)
+      AND cuisine <> (SELECT name FROM cuisine_categories WHERE cuisine_categories.id = restaurants.category_id)`).run();
+}
+
 type ReviewRow = {
   id: string;
   name: string;
   area: string;
   address: string;
+  category_id: string;
   cuisine: string;
   price_label: string;
   dish: string;
@@ -176,6 +274,123 @@ type DishRow = {
   photo_sort_order: number;
 };
 
+type CategoryUsageRow = StoredCategoryRow & { usage_count: number };
+
+export async function listCategories(): Promise<CuisineCategory[]> {
+  await ensureDatabase();
+  const result = await getD1().prepare(`SELECT
+    cuisine_categories.id,
+    cuisine_categories.name,
+    cuisine_categories.name_key,
+    COUNT(restaurants.id) AS usage_count
+  FROM cuisine_categories
+  LEFT JOIN restaurants ON restaurants.category_id = cuisine_categories.id
+  GROUP BY cuisine_categories.id, cuisine_categories.name, cuisine_categories.name_key
+  ORDER BY cuisine_categories.name_key, cuisine_categories.id`).all<CategoryUsageRow>();
+
+  return result.results.map(categoryFromRow);
+}
+
+export async function createCategory(input: CategoryInput): Promise<CuisineCategory> {
+  await ensureDatabase();
+  const db = getD1();
+  await assertCategoryNameAvailable(db, input.nameKey);
+  const id = crypto.randomUUID();
+  try {
+    await db.prepare("INSERT INTO cuisine_categories (id, name, name_key) VALUES (?, ?, ?)")
+      .bind(id, input.name, input.nameKey)
+      .run();
+  } catch (error) {
+    throwCategoryConflict(error);
+  }
+  return { id, name: input.name, usageCount: 0 };
+}
+
+export async function renameCategory(categoryId: string, input: CategoryInput): Promise<CuisineCategory> {
+  await ensureDatabase();
+  const db = getD1();
+  const current = await getCategoryRow(db, categoryId);
+  await assertCategoryNameAvailable(db, input.nameKey, categoryId);
+
+  try {
+    await db.batch([
+      db.prepare(`UPDATE cuisine_categories
+        SET name = ?, name_key = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?`)
+        .bind(input.name, input.nameKey, categoryId),
+      db.prepare(`UPDATE restaurants
+        SET cuisine = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE category_id = ?`)
+        .bind(input.name, categoryId),
+    ]);
+  } catch (error) {
+    throwCategoryConflict(error);
+  }
+
+  const usageCount = await categoryUsageCount(db, current.id);
+  return { id: current.id, name: input.name, usageCount };
+}
+
+export async function deleteCategory(categoryId: string): Promise<void> {
+  await ensureDatabase();
+  const db = getD1();
+  await getCategoryRow(db, categoryId);
+  const usageCount = await categoryUsageCount(db, categoryId);
+  if (usageCount > 0) {
+    throw httpError(
+      `Không thể xóa loại món đang được dùng trong ${usageCount} bài viết. Hãy chuyển các bài viết sang loại khác trước.`,
+      409,
+    );
+  }
+
+  try {
+    await db.prepare("DELETE FROM cuisine_categories WHERE id = ?").bind(categoryId).run();
+  } catch (error) {
+    if (error instanceof Error && /foreign key/i.test(error.message)) {
+      throw httpError("Không thể xóa loại món đang được sử dụng.", 409);
+    }
+    throw error;
+  }
+}
+
+async function getCategoryRow(db: D1Database, categoryId: string): Promise<StoredCategoryRow> {
+  const category = await db.prepare("SELECT id, name, name_key FROM cuisine_categories WHERE id = ?")
+    .bind(categoryId)
+    .first<StoredCategoryRow>();
+  if (!category) throw httpError("Không tìm thấy loại món.", 404);
+  return category;
+}
+
+async function assertCategoryNameAvailable(
+  db: D1Database,
+  nameKey: string,
+  excludedId?: string,
+): Promise<void> {
+  const categories = await db.prepare("SELECT id, name, name_key FROM cuisine_categories").all<StoredCategoryRow>();
+  const duplicate = categories.results.find(
+    (category) => category.id !== excludedId && normalizeCategoryKey(category.name) === nameKey,
+  );
+  if (duplicate) throw httpError("Loại món này đã tồn tại.", 409);
+}
+
+async function categoryUsageCount(db: D1Database, categoryId: string): Promise<number> {
+  const row = await db.prepare("SELECT COUNT(*) AS usage_count FROM restaurants WHERE category_id = ?")
+    .bind(categoryId)
+    .first<{ usage_count: number }>();
+  return Number(row?.usage_count ?? 0);
+}
+
+function categoryFromRow(row: CategoryUsageRow): CuisineCategory {
+  return { id: row.id, name: row.name, usageCount: Number(row.usage_count) };
+}
+
+function throwCategoryConflict(error: unknown): never {
+  if (error instanceof Error && /(unique|constraint)/i.test(error.message)) {
+    throw httpError("Loại món này đã tồn tại.", 409);
+  }
+  throw error;
+}
+
 export async function listPublishedSpots(): Promise<PublishedSpot[]> {
   await ensureDatabase();
   const db = getD1();
@@ -185,7 +400,8 @@ export async function listPublishedSpots(): Promise<PublishedSpot[]> {
       restaurants.name,
       restaurants.area,
       restaurants.address,
-      restaurants.cuisine,
+      restaurants.category_id,
+      COALESCE(cuisine_categories.name, restaurants.cuisine) AS cuisine,
       restaurants.price_label,
       reviews.dish,
       reviews.rating,
@@ -196,6 +412,7 @@ export async function listPublishedSpots(): Promise<PublishedSpot[]> {
       reviews.is_featured
     FROM reviews
     INNER JOIN restaurants ON restaurants.id = reviews.restaurant_id
+    LEFT JOIN cuisine_categories ON cuisine_categories.id = restaurants.category_id
     WHERE reviews.status = 'published'
     ORDER BY reviews.is_featured DESC, reviews.visited_at DESC, reviews.created_at DESC`).all<ReviewRow>(),
     db.prepare("SELECT review_id, object_key, alt_text, content_type, size_bytes FROM photos ORDER BY review_id, sort_order, created_at").all<PhotoRow>(),
@@ -229,6 +446,7 @@ export async function listPublishedSpots(): Promise<PublishedSpot[]> {
       name: row.name,
       area: row.area,
       address: row.address,
+      categoryId: row.category_id,
       cuisine: row.cuisine,
       dish: row.dish,
       rating: row.rating,
@@ -250,6 +468,7 @@ export async function listPublishedSpots(): Promise<PublishedSpot[]> {
 export async function createReview(input: ReviewInput): Promise<string> {
   await ensureDatabase();
   const db = getD1();
+  const category = await getCategoryRow(db, input.categoryId);
   const restaurantId = crypto.randomUUID();
   const reviewId = crypto.randomUUID();
   const slugBase = slugify(input.name) || "quan-an";
@@ -257,9 +476,9 @@ export async function createReview(input: ReviewInput): Promise<string> {
 
   const statements = [
     db.prepare(`INSERT INTO restaurants
-      (id, name, slug, area, address, cuisine, price_label)
-      VALUES (?, ?, ?, ?, ?, ?, ?)`)
-      .bind(restaurantId, input.name, slug, input.area, input.address, input.cuisine, input.priceLabel),
+      (id, name, slug, area, address, cuisine, category_id, price_label)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`)
+      .bind(restaurantId, input.name, slug, input.area, input.address, category.name, category.id, input.priceLabel),
     db.prepare(`INSERT INTO reviews
       (id, restaurant_id, dish, rating, excerpt, content, visited_at, is_favorite, is_featured, status)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'published')`)
@@ -324,6 +543,7 @@ export async function deleteReview(reviewId: string): Promise<string[]> {
 export async function updateReview(reviewId: string, input: ReviewInput): Promise<string[]> {
   await ensureDatabase();
   const db = getD1();
+  const category = await getCategoryRow(db, input.categoryId);
   const review = await db
     .prepare("SELECT restaurant_id FROM reviews WHERE id = ?")
     .bind(reviewId)
@@ -345,14 +565,15 @@ export async function updateReview(reviewId: string, input: ReviewInput): Promis
 
   await db.batch([
     db.prepare(`UPDATE restaurants SET
-      name = ?, slug = ?, area = ?, address = ?, cuisine = ?, price_label = ?, updated_at = CURRENT_TIMESTAMP
+      name = ?, slug = ?, area = ?, address = ?, cuisine = ?, category_id = ?, price_label = ?, updated_at = CURRENT_TIMESTAMP
       WHERE id = ?`)
       .bind(
         input.name,
         `${slugify(input.name) || "quan-an"}-${review.restaurant_id.slice(0, 8)}`,
         input.area,
         input.address,
-        input.cuisine,
+        category.name,
+        category.id,
         input.priceLabel,
         review.restaurant_id,
       ),
@@ -406,4 +627,10 @@ function slugify(value: string): string {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
+}
+
+function httpError(message: string, status: number): Error {
+  const error = new Error(message);
+  Object.assign(error, { status });
+  return error;
 }

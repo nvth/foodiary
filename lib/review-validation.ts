@@ -35,7 +35,7 @@ export function parseReviewInput(value: unknown): ReviewInput {
     name: requiredString(input.name, "Tên quán", 120),
     area: requiredString(input.area, "Khu vực", 80),
     address: requiredString(input.address, "Địa chỉ", 240),
-    cuisine: requiredString(input.cuisine, "Loại món", 80),
+    categoryId: requiredString(input.categoryId, "Loại món", 120),
     priceLabel: requiredString(input.priceLabel, "Mức giá", 40),
     dish: dishes[0].name,
     rating,

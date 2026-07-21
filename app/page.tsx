@@ -17,6 +17,7 @@ type ReviewDish = { id?: string; name: string; photoIndex: number };
 
 export type Spot = {
   id: number | string;
+  categoryId?: string | null;
   name: string;
   area: string;
   address: string;
@@ -37,6 +38,8 @@ export type Spot = {
 };
 
 type ReviewsResponse = { spots?: Spot[] };
+export type CategoryOption = { id: string; name: string; usageCount: number };
+type CategoriesResponse = { categories?: CategoryOption[] };
 type SessionResponse = { isAdmin?: boolean };
 type UploadResponse = {
   error?: string;
@@ -160,6 +163,12 @@ const spots: Spot[] = [
   },
 ];
 
+const demoCategories: CategoryOption[] = Array.from(new Set(spots.map((spot) => spot.cuisine))).map((name, index) => ({
+  id: `demo-category-${index + 1}`,
+  name,
+  usageCount: spots.filter((spot) => spot.cuisine === name).length,
+}));
+
 const galleryPhoto = (id: string) =>
   `https://images.unsplash.com/${id}?auto=format&fit=crop&w=1400&q=85`;
 
@@ -220,10 +229,11 @@ type FoodBlogProps = {
   adminMode?: boolean;
   editorOnly?: boolean;
   initialEditorSpot?: Spot | null;
+  initialCategories?: CategoryOption[];
 };
 
-export function FoodBlog({ adminMode = false, editorOnly = false, initialEditorSpot = null }: FoodBlogProps) {
-  const [category, setCategory] = useState("Tất cả");
+export function FoodBlog({ adminMode = false, editorOnly = false, initialEditorSpot = null, initialCategories }: FoodBlogProps) {
+  const [categoryId, setCategoryId] = useState("all");
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<Spot | null>(null);
   const [photoIndex, setPhotoIndex] = useState(0);
@@ -234,6 +244,10 @@ export function FoodBlog({ adminMode = false, editorOnly = false, initialEditorS
   const [saved, setSaved] = useState(false);
   const [draftRating, setDraftRating] = useState(initialEditorSpot?.rating ?? 4.5);
   const [allSpots, setAllSpots] = useState<Spot[]>(spots);
+  const [managedCategories, setManagedCategories] = useState<CategoryOption[]>(
+    initialCategories ?? (adminMode ? [] : demoCategories),
+  );
+  const [categoriesLoaded, setCategoriesLoaded] = useState(Boolean(initialCategories));
   const [isAdmin, setIsAdmin] = useState(adminMode);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [photoCaptions, setPhotoCaptions] = useState<string[]>([]);
@@ -265,11 +279,6 @@ export function FoodBlog({ adminMode = false, editorOnly = false, initialEditorS
     places: String(allSpots.length).padStart(2, "0"),
     areas: String(new Set(allSpots.map((spot) => spot.area)).size).padStart(2, "0"),
   }), [allSpots]);
-  const categories = useMemo(
-    () => ["Tất cả", ...Array.from(new Set(allSpots.map((spot) => spot.cuisine)))],
-    [allSpots],
-  );
-
   useEffect(() => {
     let cancelled = false;
     const sessionRequest: Promise<SessionResponse> = adminMode
@@ -277,17 +286,29 @@ export function FoodBlog({ adminMode = false, editorOnly = false, initialEditorS
       : Promise.resolve({ isAdmin: false });
     Promise.all([
       fetch("/api/reviews", { headers: { accept: "application/json" } }).then((response) => response.json() as Promise<ReviewsResponse>),
+      fetch("/api/categories", { headers: { accept: "application/json" } }).then((response) => {
+        if (!response.ok) throw new Error("Không thể tải loại món.");
+        return response.json() as Promise<CategoriesResponse>;
+      }).catch(() => ({} as CategoriesResponse)),
       sessionRequest,
     ])
-      .then(([reviewsData, sessionData]) => {
+      .then(([reviewsData, categoriesData, sessionData]) => {
         if (cancelled) return;
         if (Array.isArray(reviewsData.spots) && reviewsData.spots.length > 0) {
           setAllSpots(reviewsData.spots);
         }
+        if (Array.isArray(categoriesData.categories)) {
+          if (adminMode || categoriesData.categories.length > 0) {
+            setManagedCategories(categoriesData.categories);
+            setCategoryId((current) => current === "all" || categoriesData.categories?.some((item) => item.id === current) ? current : "all");
+          }
+        }
+        setCategoriesLoaded(true);
         setIsAdmin(adminMode && Boolean(sessionData.isAdmin));
       })
       .catch(() => {
         // The static demo remains usable when Cloudflare bindings are not active yet.
+        setCategoriesLoaded(true);
       });
     return () => {
       cancelled = true;
@@ -321,12 +342,15 @@ export function FoodBlog({ adminMode = false, editorOnly = false, initialEditorS
 
   const filtered = useMemo(() => {
     const normalized = query.trim().toLowerCase();
+    const selectedCategory = managedCategories.find((item) => item.id === categoryId);
     return allSpots.filter((spot) => {
-      const inCategory = category === "Tất cả" || spot.cuisine === category;
-      const inSearch = !normalized || `${spot.name} ${spot.dish} ${spot.area}`.toLowerCase().includes(normalized);
+      const inCategory = categoryId === "all"
+        || spot.categoryId === categoryId
+        || (!spot.categoryId && spot.cuisine === selectedCategory?.name);
+      const inSearch = !normalized || `${spot.name} ${spot.dish} ${spot.area} ${spot.cuisine}`.toLowerCase().includes(normalized);
       return inCategory && inSearch;
     });
-  }, [allSpots, category, query]);
+  }, [allSpots, categoryId, managedCategories, query]);
 
   function selectImages(files: File[], append = false): boolean {
     const nextFiles = append ? [...selectedFiles, ...files] : files;
@@ -353,6 +377,13 @@ export function FoodBlog({ adminMode = false, editorOnly = false, initialEditorS
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const form = event.currentTarget;
+    const fields = new FormData(form);
+    const selectedCategoryId = String(fields.get("categoryId") ?? "");
+    if (!selectedCategoryId || !managedCategories.some((item) => item.id === selectedCategoryId)) {
+      setFormError("Hãy chọn một loại món đã được tạo trong phần quản lý loại món.");
+      return;
+    }
     const totalPhotos = existingPhotos.length + selectedFiles.length;
     if (totalPhotos < 1 || totalPhotos > 5) {
       setFormError("Hãy chọn từ 1 đến 5 ảnh cho bài review.");
@@ -377,8 +408,6 @@ export function FoodBlog({ adminMode = false, editorOnly = false, initialEditorS
 
     setFormError("");
     setIsSubmitting(true);
-    const form = event.currentTarget;
-    const fields = new FormData(form);
     const uploadedKeys: string[] = [];
     let reviewSaved = false;
 
@@ -418,7 +447,7 @@ export function FoodBlog({ adminMode = false, editorOnly = false, initialEditorS
           name: fields.get("name"),
           area: fields.get("area"),
           address: fields.get("address"),
-          cuisine: fields.get("cuisine"),
+          categoryId: selectedCategoryId,
           priceLabel: fields.get("priceLabel"),
           dish: draftDishes[0].name.trim(),
           dishes: draftDishes.map((dish) => ({ name: dish.name.trim(), photoIndex: dish.photoIndex })),
@@ -633,9 +662,12 @@ export function FoodBlog({ adminMode = false, editorOnly = false, initialEditorS
         </div>
 
         <div className="filters" aria-label="Lọc theo loại món">
-          {categories.map((item) => (
-            <button key={item} className={category === item ? "active" : ""} onClick={() => setCategory(item)}>
-              {item}
+          <button type="button" className={categoryId === "all" ? "active" : ""} aria-pressed={categoryId === "all"} onClick={() => setCategoryId("all")}>
+            Tất cả
+          </button>
+          {managedCategories.map((item) => (
+            <button type="button" key={item.id} className={categoryId === item.id ? "active" : ""} aria-pressed={categoryId === item.id} onClick={() => setCategoryId(item.id)}>
+              {item.name}
             </button>
           ))}
         </div>
@@ -846,7 +878,23 @@ export function FoodBlog({ adminMode = false, editorOnly = false, initialEditorS
               </div>
               <label>Địa chỉ chi tiết<input name="address" required maxLength={240} defaultValue={editingSpot?.address} placeholder="Số nhà, tên đường, phường/xã..." /></label>
               <div className="form-row">
-                <label>Loại món<input name="cuisine" required maxLength={80} defaultValue={editingSpot?.cuisine} placeholder="Món Việt, Nhật Bản..." /></label>
+                <label>
+                  <span className="category-field-heading"><span>Loại món</span><Link href="/admin/categories">Quản lý loại món ↗</Link></span>
+                  <select
+                    name="categoryId"
+                    required
+                    disabled={!managedCategories.length}
+                    defaultValue={editingSpot?.categoryId ?? ""}
+                  >
+                    <option value="" disabled>
+                      {categoriesLoaded ? "Chọn loại món" : "Đang tải loại món..."}
+                    </option>
+                    {managedCategories.map((item) => <option value={item.id} key={item.id}>{item.name}</option>)}
+                  </select>
+                  {categoriesLoaded && !managedCategories.length && (
+                    <small className="category-empty-note">Chưa có loại món. Hãy tạo một loại món trước khi lưu bài.</small>
+                  )}
+                </label>
                 <label>Mức giá<input name="priceLabel" required maxLength={40} defaultValue={editingSpot?.price} placeholder="Khoảng 85K/người" /></label>
               </div>
               <label>Ngày ghé quán<input name="visitedAt" type="date" required defaultValue={editingSpot?.date ?? new Date().toISOString().slice(0, 10)} /></label>
@@ -983,7 +1031,7 @@ export function FoodBlog({ adminMode = false, editorOnly = false, initialEditorS
                 <label><input name="isFeatured" type="checkbox" defaultChecked={editingSpot?.featured} /> Đưa lên bài nổi bật</label>
               </div>
               {formError && <p className="form-error" role="alert">{formError}</p>}
-              <button className="submit-button" type="submit" disabled={isSubmitting || saved}>
+              <button className="submit-button" type="submit" disabled={isSubmitting || saved || !managedCategories.length}>
                 {saved
                   ? editingSpot ? "Đã cập nhật bài review ✓" : "Đã lưu vào nhật ký ✓"
                   : isSubmitting ? "Đang tải ảnh và lưu bài..."

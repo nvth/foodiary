@@ -5,6 +5,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import type { PublishedSpot } from "@/db";
+import AdminSidebar from "./admin-sidebar";
 
 export default function AdminDashboard({ initialSpots }: { initialSpots: PublishedSpot[] }) {
   const [spots, setSpots] = useState(initialSpots);
@@ -37,15 +38,7 @@ export default function AdminDashboard({ initialSpots }: { initialSpots: Publish
 
   return (
     <main className="admin-dashboard">
-      <aside className="admin-sidebar">
-        <Link className="admin-brand" href="/admin"><img className="admin-logo" src="/frog-logo.png" alt="" aria-hidden="true" /><strong>Ăn đâu<br />hôm nay?</strong></Link>
-        <nav aria-label="Điều hướng quản trị">
-          <a className="active" href="#posts">Bài viết</a>
-          <Link href="/admin/editor">Thêm bài mới</Link>
-          <Link href="/">Xem trang chủ ↗</Link>
-        </nav>
-        <small>Chỉ dành cho tác giả</small>
-      </aside>
+      <AdminSidebar active="posts" />
 
       <section className="admin-workspace" id="posts">
         <header className="admin-page-header">
