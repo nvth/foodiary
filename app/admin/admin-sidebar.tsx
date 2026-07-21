@@ -1,6 +1,7 @@
 /* eslint-disable @next/next/no-img-element -- The local transparent logo is a small static asset. */
 
 import Link from "next/link";
+import ThemeToggle from "../theme-toggle";
 
 type AdminSidebarProps = {
   active: "posts" | "categories" | "suggestions" | "about";
@@ -9,10 +10,13 @@ type AdminSidebarProps = {
 export default function AdminSidebar({ active }: AdminSidebarProps) {
   return (
     <aside className="admin-sidebar">
-      <Link className="admin-brand" href="/admin">
-        <img className="admin-logo" src="/frog-logo.png" alt="" aria-hidden="true" />
-        <strong>Ăn đâu<br />hôm nay?</strong>
-      </Link>
+      <div className="admin-sidebar-heading">
+        <Link className="admin-brand" href="/admin">
+          <img className="admin-logo" src="/frog-logo.png" alt="" aria-hidden="true" />
+          <strong>Ăn đâu<br />hôm nay?</strong>
+        </Link>
+        <ThemeToggle className="theme-toggle-sidebar" />
+      </div>
       <nav aria-label="Điều hướng quản trị">
         <Link className={active === "posts" ? "active" : undefined} aria-current={active === "posts" ? "page" : undefined} href="/admin">Bài viết</Link>
         <Link className={active === "categories" ? "active" : undefined} aria-current={active === "categories" ? "page" : undefined} href="/admin/categories">Loại món</Link>

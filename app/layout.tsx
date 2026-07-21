@@ -2,6 +2,18 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import "./globals.css";
 
+const themeInitializer = `(() => {
+  const storageKey = "foodblog-theme";
+  let theme;
+  try {
+    const storedTheme = window.localStorage.getItem(storageKey);
+    if (storedTheme === "light" || storedTheme === "dark") theme = storedTheme;
+  } catch {}
+  if (!theme) theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  document.documentElement.dataset.theme = theme;
+  document.documentElement.style.colorScheme = theme;
+})();`;
+
 const title = "Ăn đâu hôm nay? — Nhật ký vị giác";
 const description = "Những quán đã ghé, những món khiến mình nhớ và vài câu chuyện nhỏ quanh bàn ăn.";
 
@@ -38,7 +50,10 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="vi">
+    <html lang="vi" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeInitializer }} />
+      </head>
       <body>{children}</body>
     </html>
   );

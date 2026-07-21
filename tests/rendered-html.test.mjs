@@ -27,6 +27,33 @@ test("ships the Vietnamese food journal experience", async () => {
   assert.doesNotMatch(page, /codex-preview|Your site is taking shape|react-loading-skeleton/i);
 });
 
+test("provides a persistent system-aware night mode across public and admin views", async () => {
+  const [layout, toggle, page, sidebar, styles, suggestionStyles] = await Promise.all([
+    readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/theme-toggle.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/admin/admin-sidebar.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
+    readFile(new URL("../app/admin/suggestions/suggestions.module.css", import.meta.url), "utf8"),
+  ]);
+
+  assert.match(layout, /suppressHydrationWarning/);
+  assert.match(layout, /foodblog-theme/);
+  assert.match(layout, /prefers-color-scheme:\s*dark/);
+  assert.match(layout, /document\.documentElement\.dataset\.theme/);
+  assert.match(toggle, /localStorage\.setItem\(STORAGE_KEY/);
+  assert.match(toggle, /addEventListener\("storage"/);
+  assert.match(toggle, /aria-pressed/);
+  assert.match(toggle, /Chuyển sang giao diện (sáng|tối)/);
+  assert.match(page, /<ThemeToggle/);
+  assert.match(page, /editor-theme-toggle/);
+  assert.match(sidebar, /theme-toggle-sidebar/);
+  assert.match(styles, /:root\[data-theme="dark"\]/);
+  assert.match(styles, /color-scheme:\s*dark/);
+  assert.match(styles, /--surface-control:/);
+  assert.match(suggestionStyles, /:global\(html\[data-theme="dark"\]\)/);
+});
+
 test("declares Cloudflare-native persistence and protected mutations", async () => {
   const [hosting, schema, visitDateMigration, suggestionRateMigration, suggestionAbuse, adminRoute, categoryRoute, publicCategoryRoute, adminAboutRoute, publicAboutRoute, publicSuggestionRoute, adminSuggestionRoute, adminSuggestionPage, adminSidebar, mediaRoute, adminPage, adminAuth, publicPage, envExample] = await Promise.all([
     readFile(new URL("../.openai/hosting.json", import.meta.url), "utf8"),

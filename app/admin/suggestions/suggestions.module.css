@@ -651,3 +651,198 @@
     transition: none;
   }
 }
+
+:global(html[data-theme="dark"]) .headerSummary {
+  color: var(--muted);
+}
+
+:global(html[data-theme="dark"]) .headerSummary strong {
+  color: var(--green);
+}
+
+:global(html[data-theme="dark"]) .stats article {
+  border-color: var(--line);
+  background: var(--paper);
+  color: var(--ink);
+}
+
+:global(html[data-theme="dark"]) .stats article::after {
+  border-color: color-mix(in srgb, var(--line) 72%, transparent);
+}
+
+:global(html[data-theme="dark"]) .stats .unreadStat {
+  border-color: color-mix(in srgb, var(--red) 48%, var(--line));
+  background: color-mix(in srgb, var(--red) 8%, var(--paper));
+}
+
+:global(html[data-theme="dark"]) .stats .unreadStat::after {
+  border-color: color-mix(in srgb, var(--red) 32%, transparent);
+}
+
+:global(html[data-theme="dark"]) .stats span,
+:global(html[data-theme="dark"]) .toolbar p,
+:global(html[data-theme="dark"]) .filterBar > p,
+:global(html[data-theme="dark"]) .dateCell,
+:global(html[data-theme="dark"]) .loading,
+:global(html[data-theme="dark"]) .empty,
+:global(html[data-theme="dark"]) .mobileLabel {
+  color: var(--muted);
+}
+
+:global(html[data-theme="dark"]) .stats strong,
+:global(html[data-theme="dark"]) .toolbar h2,
+:global(html[data-theme="dark"]) .sender strong,
+:global(html[data-theme="dark"]) .loading strong,
+:global(html[data-theme="dark"]) .empty strong {
+  color: var(--ink);
+}
+
+:global(html[data-theme="dark"]) .unreadStat strong {
+  color: var(--red);
+}
+
+:global(html[data-theme="dark"]) .panel {
+  border-color: var(--line);
+  background: var(--paper);
+  color: var(--ink);
+}
+
+:global(html[data-theme="dark"]) .toolbar {
+  border-color: var(--line);
+}
+
+:global(html[data-theme="dark"]) .refreshButton,
+:global(html[data-theme="dark"]) .actions button {
+  border-color: var(--line);
+  background: transparent;
+}
+
+:global(html[data-theme="dark"]) .refreshButton,
+:global(html[data-theme="dark"]) .statusButton {
+  color: var(--green);
+}
+
+:global(html[data-theme="dark"]) .refreshButton:hover:not(:disabled),
+:global(html[data-theme="dark"]) .statusButton:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--green) 68%, var(--line));
+  background: color-mix(in srgb, var(--green) 12%, var(--paper));
+}
+
+:global(html[data-theme="dark"]) .filterBar {
+  border-color: var(--line);
+  background: color-mix(in srgb, var(--ink) 4%, var(--paper));
+}
+
+:global(html[data-theme="dark"]) .filterButton {
+  border-color: var(--line);
+  background: var(--paper);
+  color: var(--muted);
+}
+
+:global(html[data-theme="dark"]) .filterButton span {
+  background: color-mix(in srgb, var(--ink) 10%, var(--paper));
+  color: var(--muted);
+}
+
+:global(html[data-theme="dark"]) .filterButton[aria-pressed="true"] {
+  border-color: var(--accent-fill);
+  background: var(--accent-fill);
+  color: var(--on-accent);
+}
+
+:global(html[data-theme="dark"]) .filterButton[aria-pressed="true"] span {
+  background: color-mix(in srgb, var(--on-accent) 18%, transparent);
+  color: var(--on-accent);
+}
+
+:global(html[data-theme="dark"]) .error {
+  border-color: var(--red);
+  background: color-mix(in srgb, var(--red) 14%, var(--paper));
+  color: var(--red);
+}
+
+:global(html[data-theme="dark"]) .success {
+  border-color: var(--green);
+  background: color-mix(in srgb, var(--green) 15%, var(--paper));
+  color: var(--green);
+}
+
+:global(html[data-theme="dark"]) .columnHeadings {
+  border-color: var(--line);
+  background: color-mix(in srgb, var(--ink) 5%, var(--paper));
+  color: var(--muted);
+}
+
+:global(html[data-theme="dark"]) .row {
+  border-color: var(--line);
+  background: var(--paper);
+}
+
+:global(html[data-theme="dark"]) .row:hover {
+  background: color-mix(in srgb, var(--ink) 4%, var(--paper));
+}
+
+:global(html[data-theme="dark"]) .unreadRow {
+  background: color-mix(in srgb, var(--red) 7%, var(--paper));
+  box-shadow: inset 3px 0 var(--red);
+}
+
+:global(html[data-theme="dark"]) .unreadRow:hover {
+  background: color-mix(in srgb, var(--red) 11%, var(--paper));
+}
+
+:global(html[data-theme="dark"]) .avatar {
+  border-color: var(--line);
+  background: color-mix(in srgb, var(--ink) 8%, var(--paper));
+  color: var(--green);
+}
+
+:global(html[data-theme="dark"]) .unreadRow .avatar {
+  border-color: color-mix(in srgb, var(--red) 48%, var(--line));
+  background: color-mix(in srgb, var(--red) 14%, var(--paper));
+  color: var(--red);
+}
+
+:global(html[data-theme="dark"]) .messageCell p {
+  color: color-mix(in srgb, var(--ink) 78%, var(--muted));
+}
+
+:global(html[data-theme="dark"]) .unreadRow .messageCell p {
+  color: var(--ink);
+}
+
+:global(html[data-theme="dark"]) .unreadStatus {
+  background: color-mix(in srgb, var(--red) 16%, var(--paper));
+  color: var(--red);
+}
+
+:global(html[data-theme="dark"]) .readStatus {
+  background: color-mix(in srgb, var(--green) 17%, var(--paper));
+  color: var(--green);
+}
+
+:global(html[data-theme="dark"]) .deleteButton {
+  color: var(--red);
+}
+
+:global(html[data-theme="dark"]) .deleteButton:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--red) 62%, var(--line));
+  background: color-mix(in srgb, var(--red) 13%, var(--paper));
+}
+
+:global(html[data-theme="dark"]) .spinner {
+  border-color: var(--line);
+  border-top-color: var(--red);
+}
+
+:global(html[data-theme="dark"]) .empty button {
+  background: var(--accent-fill);
+  color: var(--on-accent);
+}
+
+:global(html[data-theme="dark"]) .refreshButton:focus-visible,
+:global(html[data-theme="dark"]) .filterButton:focus-visible,
+:global(html[data-theme="dark"]) .actions button:focus-visible,
+:global(html[data-theme="dark"]) .empty button:focus-visible {
+  outline-color: color-mix(in srgb, var(--red) 42%, transparent);
+}

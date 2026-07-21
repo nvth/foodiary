@@ -7,6 +7,7 @@ import Link from "next/link";
 import type { BlogAbout } from "@/db";
 import { formatPostDate } from "@/lib/post-date";
 import { normalizeSearchText } from "@/lib/search";
+import ThemeToggle from "./theme-toggle";
 
 type StoredPhoto = {
   objectKey: string;
@@ -736,19 +737,22 @@ export function FoodBlog({ adminMode = false, editorOnly = false, initialEditorS
           <a href="#suggestions">Gửi góp ý</a>
           <a href="#about">Về blog</a>
         </nav>
-        {!adminMode && (
-          <nav className="mobile-public-nav" aria-label="Điều hướng nhanh">
-            <a href="#suggestions">Góp ý quán</a>
-            <a href="#about">Về blog</a>
-          </nav>
-        )}
-        {adminMode && isAdmin ? (
-          <button className="add-button" onClick={startCreate}>
-            <span aria-hidden="true">＋</span> Thêm quán mới
-          </button>
-        ) : (
-          <span className="journal-label">Food journal · 2026</span>
-        )}
+        <div className="topbar-actions">
+          {!adminMode && (
+            <nav className="mobile-public-nav" aria-label="Điều hướng nhanh">
+              <a href="#suggestions">Góp ý quán</a>
+              <a href="#about">Về blog</a>
+            </nav>
+          )}
+          {adminMode && isAdmin ? (
+            <button className="add-button" onClick={startCreate}>
+              <span aria-hidden="true">＋</span> Thêm quán mới
+            </button>
+          ) : (
+            <span className="journal-label">Food journal · 2026</span>
+          )}
+          {!editorOnly && <ThemeToggle />}
+        </div>
       </header>
 
       <section className="hero" id="top">
@@ -1039,7 +1043,10 @@ export function FoodBlog({ adminMode = false, editorOnly = false, initialEditorS
       {adminMode && showAdd && (
         <div className="modal-backdrop" role="presentation" onMouseDown={closeEditor}>
           <section className="add-modal" role="dialog" aria-modal="true" aria-labelledby="add-title" onMouseDown={(e) => e.stopPropagation()}>
-            <button className="close dark" onClick={closeEditor} aria-label="Đóng form">×</button>
+            <div className="editor-modal-controls">
+              <ThemeToggle className="editor-theme-toggle" />
+              <button className="close dark" onClick={closeEditor} aria-label="Đóng form">×</button>
+            </div>
             <p className="eyebrow"><span /> {editingSpot ? "Chỉnh sửa nhật ký" : "Nhật ký mới"}</p>
             <h2 id="add-title">{editingSpot ? "Chỉnh sửa bài review" : "Thêm một quán vừa ăn"}</h2>
             <p className="form-intro">{editingSpot ? "Cập nhật lại thông tin, ảnh và câu chuyện của quán." : "Ghi lại ngay khi hương vị vẫn còn mới nhé."}</p>
