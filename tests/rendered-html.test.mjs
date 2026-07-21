@@ -19,7 +19,7 @@ test("ships the Vietnamese food journal experience", async () => {
   assert.match(page, /name="hashtags"/);
   assert.match(page, /#hashtag/i);
   assert.match(page, /PostTimestamp/);
-  assert.match(page, /Ngày ghé/i);
+  assert.doesNotMatch(page, /Ngày ghé quán|name="visitedAt"/i);
   assert.match(page, /Về blog/i);
   assert.doesNotMatch(page, /codex-preview|Your site is taking shape|react-loading-skeleton/i);
 });
@@ -74,6 +74,7 @@ test("declares Cloudflare-native persistence and protected mutations", async () 
   assert.match(adminPage, /<AdminDashboard/);
   assert.match(database, /reviews\.created_at/);
   assert.match(database, /postedAt: row\.created_at/);
+  assert.match(database, /ORDER BY reviews\.is_featured DESC, reviews\.created_at DESC/);
   assert.match(adminDashboard, /Ngày giờ đăng/);
   assert.match(adminAuth, /getAdminState\(request\)/);
   assert.match(adminAuth, /redirect\("\/"\)/);

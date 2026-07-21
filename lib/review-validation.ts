@@ -43,7 +43,6 @@ export function parseReviewInput(value: unknown): ReviewInput {
     excerpt: requiredString(input.excerpt, "Mô tả ngắn", 320),
     content: requiredString(input.content, "Bài review", 8000),
     hashtags: parseReviewHashtags(input.hashtags),
-    visitedAt: validDate(input.visitedAt),
     isFavorite: Boolean(input.isFavorite),
     isFeatured: Boolean(input.isFeatured),
     dishes,
@@ -85,14 +84,6 @@ function requiredString(value: unknown, label: string, max: number): string {
   const text = typeof value === "string" ? value.trim() : "";
   if (!text) throw badRequest(`${label} là bắt buộc.`);
   if (text.length > max) throw badRequest(`${label} không được quá ${max} ký tự.`);
-  return text;
-}
-
-function validDate(value: unknown): string {
-  const text = requiredString(value, "Ngày ghé quán", 10);
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(text) || Number.isNaN(Date.parse(`${text}T00:00:00Z`))) {
-    throw badRequest("Ngày ghé quán không hợp lệ.");
-  }
   return text;
 }
 

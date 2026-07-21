@@ -28,7 +28,6 @@ export type ReviewInput = {
   excerpt: string;
   content: string;
   hashtags: string[];
-  visitedAt: string;
   isFavorite: boolean;
   isFeatured: boolean;
   dishes: Array<{ name: string; photoIndex: number }>;
@@ -63,7 +62,6 @@ export type PublishedSpot = {
     contentType: string;
     sizeBytes: number;
   }>;
-  date: string;
   postedAt: string;
   favorite: boolean;
   featured: boolean;
@@ -439,7 +437,6 @@ type ReviewRow = {
   excerpt: string;
   content: string;
   hashtags: string;
-  visited_at: string;
   created_at: string;
   is_favorite: number;
   is_featured: number;
@@ -594,7 +591,6 @@ export async function listPublishedSpots(): Promise<PublishedSpot[]> {
       reviews.excerpt,
       reviews.content,
       reviews.hashtags,
-      reviews.visited_at,
       reviews.created_at,
       reviews.is_favorite,
       reviews.is_featured
@@ -602,7 +598,7 @@ export async function listPublishedSpots(): Promise<PublishedSpot[]> {
     INNER JOIN restaurants ON restaurants.id = reviews.restaurant_id
     LEFT JOIN cuisine_categories ON cuisine_categories.id = restaurants.category_id
     WHERE reviews.status = 'published'
-    ORDER BY reviews.is_featured DESC, reviews.visited_at DESC, reviews.created_at DESC`).all<ReviewRow>(),
+    ORDER BY reviews.is_featured DESC, reviews.created_at DESC`).all<ReviewRow>(),
     db.prepare("SELECT review_id, object_key, alt_text, content_type, size_bytes FROM photos ORDER BY review_id, sort_order, created_at").all<PhotoRow>(),
     db.prepare("SELECT id, review_id, name, photo_sort_order FROM review_dishes ORDER BY review_id, sort_order, created_at").all<DishRow>(),
   ]);
@@ -646,7 +642,6 @@ export async function listPublishedSpots(): Promise<PublishedSpot[]> {
       gallery,
       galleryCaptions: photos.map((photo) => photo.caption),
       photos,
-      date: row.visited_at,
       postedAt: row.created_at,
       favorite: Boolean(row.is_favorite),
       featured: Boolean(row.is_featured),
@@ -671,7 +666,7 @@ export async function createReview(input: ReviewInput): Promise<string> {
       .bind(restaurantId, input.name, slug, input.area, input.address, category.name, category.id, input.priceLabel),
     db.prepare(`INSERT INTO reviews
       (id, restaurant_id, dish, rating, excerpt, content, hashtags, visited_at, is_favorite, is_featured, status)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'published')`)
+      VALUES (?, ?, ?, ?, ?, ?, ?, date('now'), ?, ?, 'published')`)
       .bind(
         reviewId,
         restaurantId,
@@ -680,7 +675,6 @@ export async function createReview(input: ReviewInput): Promise<string> {
         input.excerpt,
         input.content,
         JSON.stringify(input.hashtags),
-        input.visitedAt,
         input.isFavorite ? 1 : 0,
         input.isFeatured ? 1 : 0,
       ),
@@ -769,7 +763,7 @@ export async function updateReview(reviewId: string, input: ReviewInput): Promis
         review.restaurant_id,
       ),
     db.prepare(`UPDATE reviews SET
-      dish = ?, rating = ?, excerpt = ?, content = ?, hashtags = ?, visited_at = ?,
+      dish = ?, rating = ?, excerpt = ?, content = ?, hashtags = ?,
       is_favorite = ?, is_featured = ?, updated_at = CURRENT_TIMESTAMP
       WHERE id = ?`)
       .bind(
@@ -778,7 +772,6 @@ export async function updateReview(reviewId: string, input: ReviewInput): Promis
         input.excerpt,
         input.content,
         JSON.stringify(input.hashtags),
-        input.visitedAt,
         input.isFavorite ? 1 : 0,
         input.isFeatured ? 1 : 0,
         reviewId,

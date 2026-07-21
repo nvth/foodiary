@@ -62,7 +62,7 @@ a { color: inherit; text-decoration: none; }
 .admin-panel-toolbar input { width: 100%; padding: 10px 12px; border: 1px solid #d8d2c8; border-radius: 4px; background: white; outline: 0; font-size: 11px; }
 .admin-panel-toolbar input:focus { border-color: var(--red); }
 .admin-table-wrap { overflow-x: auto; }
-.admin-post-table { width: 100%; min-width: 920px; border-collapse: collapse; }
+.admin-post-table { width: 100%; min-width: 820px; border-collapse: collapse; }
 .admin-post-table th { padding: 11px 15px; border-bottom: 1px solid #e3ded4; background: #f5f2eb; color: #7c7971; text-align: left; font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: .09em; }
 .admin-post-table td { padding: 13px 15px; border-bottom: 1px solid #ebe7de; color: #5e5c55; font-size: 10px; vertical-align: middle; }
 .admin-post-table tbody tr:last-child td { border-bottom: 0; }

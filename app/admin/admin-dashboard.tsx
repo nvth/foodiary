@@ -71,14 +71,13 @@ export default function AdminDashboard({ initialSpots }: { initialSpots: Publish
 
           <div className="admin-table-wrap">
             <table className="admin-post-table">
-              <thead><tr><th>Bài viết</th><th>Khu vực</th><th>Điểm</th><th>Ngày ghé</th><th>Ngày giờ đăng</th><th>Trạng thái</th><th><span className="sr-only">Thao tác</span></th></tr></thead>
+              <thead><tr><th>Bài viết</th><th>Khu vực</th><th>Điểm</th><th>Ngày giờ đăng</th><th>Trạng thái</th><th><span className="sr-only">Thao tác</span></th></tr></thead>
               <tbody>
                 {filtered.map((spot) => (
                   <tr key={spot.id}>
                     <td><div className="admin-post-cell"><img src={spot.image} alt="" /><span><strong>{spot.name}</strong><small>{spot.dishes.length} món · {spot.gallery.length} ảnh</small></span></div></td>
                     <td>{spot.area}</td>
                     <td><span className="admin-rating">★ {spot.rating.toFixed(1)}</span></td>
-                    <td>{spot.date}</td>
                     <td><AdminPostTimestamp value={spot.postedAt} /></td>
                     <td><span className={spot.featured ? "admin-status featured" : "admin-status"}>{spot.featured ? "Nổi bật" : "Đã đăng"}</span></td>
                     <td><div className="admin-row-actions"><Link href={`/admin/editor?id=${encodeURIComponent(spot.id)}`}>Sửa</Link><button onClick={() => deletePost(spot)} disabled={deletingId === spot.id}>{deletingId === spot.id ? "Đang xóa" : "Xóa"}</button></div></td>

@@ -33,7 +33,6 @@ export type Spot = {
   gallery?: string[];
   galleryCaptions?: string[];
   photos?: StoredPhoto[];
-  date: string;
   postedAt?: string;
   favorite?: boolean;
   featured?: boolean;
@@ -94,7 +93,6 @@ const spots: Spot[] = [
       "Mình ghé vào một chiều mưa và gọi tô đặc biệt. Nước dùng ít đúng kiểu Quảng, vị ngọt tự nhiên từ xương chứ không gắt. Tôm tươi, thịt mềm, bánh tráng giòn và rau sống rất sạch. Không gian nhỏ nhưng ấm cúng, nhân viên dễ thương. Đây là quán mình chắc chắn sẽ quay lại.",
     image:
       "https://images.unsplash.com/photo-1559314809-0d155014e29e?auto=format&fit=crop&w=1400&q=85",
-    date: "18.07.2026",
     postedAt: "2026-07-18T09:15:00+07:00",
     favorite: true,
     hashtags: ["mì quảng", "miền trung"],
@@ -113,7 +111,6 @@ const spots: Spot[] = [
       "Một tô phở có cá tính rất riêng: thơm mùi bò xào, nước dùng đậm và béo hơn kiểu phở truyền thống. Mình thích nhất phần thịt tái lăn mềm nhưng vẫn có cạnh xém thơm. Quán khá đông vào buổi trưa nên nên đi sớm một chút.",
     image:
       "https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?auto=format&fit=crop&w=1000&q=85",
-    date: "12.07.2026",
     postedAt: "2026-07-12T19:40:00+07:00",
     hashtags: ["phở", "ăn sáng"],
   },
@@ -131,7 +128,6 @@ const spots: Spot[] = [
       "Chiếc pizza nửa burrata nửa parma ham vẫn luôn là lựa chọn an toàn của mình. Phô mai tươi mát, béo nhẹ; cà chua có độ chua vừa đủ để tổng thể không bị ngấy. Không gian bếp mở tạo cảm giác rất vui và gần gũi.",
     image:
       "https://images.unsplash.com/photo-1579751626657-72bc17010498?auto=format&fit=crop&w=1000&q=85",
-    date: "05.07.2026",
     postedAt: "2026-07-05T11:20:00+07:00",
     hashtags: ["pizza", "hẹn hò"],
   },
@@ -149,7 +145,6 @@ const spots: Spot[] = [
       "Set sashimi có độ tươi tốt, đặc biệt là cá hồi và sò điệp. Cơm sushi nắm vừa tay, hạt cơm còn ấm. Giá hơi cao nhưng tương xứng với chất lượng nguyên liệu và phong cách phục vụ chỉn chu.",
     image:
       "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?auto=format&fit=crop&w=1000&q=85",
-    date: "28.06.2026",
     postedAt: "2026-06-28T20:05:00+07:00",
   },
   {
@@ -166,7 +161,6 @@ const spots: Spot[] = [
       "Tô ramen nóng hổi với nước dùng xương heo đậm vị nhưng không quá mặn. Mì cứng vừa, thịt chashu mỏng và tan khá nhanh. Một địa chỉ hợp cho những tối muốn ăn gì đó thật ấm bụng.",
     image:
       "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&w=1000&q=85",
-    date: "22.06.2026",
     postedAt: "2026-06-22T12:10:00+07:00",
   },
   {
@@ -183,7 +177,6 @@ const spots: Spot[] = [
       "Mình thích khoảng sân xanh và ánh sáng buổi sáng ở đây. Cold brew có vị chua sáng, thêm cam nên dễ uống kể cả với người mới thử cà phê đặc sản. Bánh chuối ẩm, không quá ngọt.",
     image:
       "https://images.unsplash.com/photo-1445116572660-236099ec97a0?auto=format&fit=crop&w=1000&q=85",
-    date: "15.06.2026",
     postedAt: "2026-06-15T08:30:00+07:00",
   },
 ];
@@ -560,7 +553,6 @@ export function FoodBlog({ adminMode = false, editorOnly = false, initialEditorS
           rating: draftRating,
           excerpt: fields.get("excerpt"),
           content: fields.get("content"),
-          visitedAt: fields.get("visitedAt"),
           isFavorite: fields.get("isFavorite") === "on",
           isFeatured: fields.get("isFeatured") === "on",
           hashtags,
@@ -919,7 +911,7 @@ export function FoodBlog({ adminMode = false, editorOnly = false, initialEditorS
                 <span><strong>andauhomnay</strong><small>Nhật ký vị giác · <PostTimestamp value={selected.postedAt} /></small></span>
                 <button aria-label="Lưu bài viết">♡</button>
               </div>
-              <div className="review-kicker"><span>{selected.area} · Ngày ghé {selected.date}</span><Stars rating={selected.rating} /></div>
+              <div className="review-kicker"><span>{selected.area}</span><Stars rating={selected.rating} /></div>
               <h2 id="review-title">{selected.name}</h2>
               {!!selected.hashtags?.length && (
                 <div className="post-hashtags review-hashtags" aria-label="Hashtag bài viết">
@@ -1066,7 +1058,6 @@ export function FoodBlog({ adminMode = false, editorOnly = false, initialEditorS
                 </label>
                 <label>Mức giá<input name="priceLabel" required maxLength={40} defaultValue={editingSpot?.price} placeholder="Khoảng 85K/người" /></label>
               </div>
-              <label>Ngày ghé quán<input name="visitedAt" type="date" required defaultValue={editingSpot?.date ?? new Date().toISOString().slice(0, 10)} /></label>
               <label>Mô tả ngắn<textarea name="excerpt" required maxLength={320} rows={2} defaultValue={editingSpot?.excerpt} placeholder="Một câu ngắn hiển thị trên trang chủ..." /></label>
               <label>Bài review<textarea name="content" required maxLength={8000} rows={6} defaultValue={editingSpot?.review} placeholder="Kể kỹ hơn về món ăn, không gian và trải nghiệm..." /></label>
               <label className="hashtag-field">
