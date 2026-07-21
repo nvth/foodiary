@@ -45,7 +45,7 @@ Luôn kiểm tra migration mới trong `drizzle/` trước khi deploy.
 
 ## Cấu hình Cloudflare
 
-`wrangler.jsonc` cấu hình Worker `an-dau-hom-nay`, bật URL `workers.dev`, dùng compatibility date `2026-05-15` và khai báo bốn bindings:
+`wrangler.jsonc` cấu hình Worker `foodiary`, bật URL `workers.dev`, dùng compatibility date `2026-05-15` và khai báo bốn bindings:
 
 - `DB`: D1 database `an-dau-hom-nay-db` (`2c7233ff-8df0-4f51-a0a3-00f59be95187`), migration nằm trong `drizzle/`.
 - `MEDIA`: R2 bucket `an-dau-hom-nay-media` (storage class Standard, location APAC).
@@ -123,4 +123,4 @@ npx wrangler d1 migrations apply DB --remote
 npx vinext deploy
 ```
 
-Để áp dụng migration vào D1 local khi phát triển, dùng `npx wrangler d1 migrations apply DB --local`. Sau khi deploy, kiểm tra URL `an-dau-hom-nay.<subdomain>.workers.dev` và Access policy cho `/admin*` cùng `/api/admin/*`.
+Để áp dụng migration vào D1 local khi phát triển, dùng `npx wrangler d1 migrations apply DB --local`. Sau khi deploy, kiểm tra URL `foodiary.nvth.workers.dev` và Access policy cho `/admin*` cùng `/api/admin/*`.
