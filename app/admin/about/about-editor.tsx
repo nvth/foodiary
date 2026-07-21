@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { FormEvent, useState } from "react";
 import type { BlogAbout } from "@/db";
 
@@ -79,9 +78,9 @@ export default function AboutEditor({ initialAbout }: { initialAbout: BlogAbout 
     <section className="admin-workspace">
       <header className="admin-page-header">
         <div><p>Nội dung giới thiệu</p><h1>Về blog</h1></div>
-        <Link className="admin-secondary-action" href="/#about" target="_blank" rel="noreferrer">
+        <a className="admin-secondary-action" href="/#about" target="_blank" rel="noreferrer">
           Xem trên trang chủ ↗
-        </Link>
+        </a>
       </header>
 
       <section className="admin-panel about-admin-panel" aria-labelledby="about-editor-title">

@@ -1,9 +1,8 @@
 "use client";
 
-/* eslint-disable @next/next/no-img-element -- Review photos are served directly from R2 with immutable caching. */
+/* eslint-disable @next/next/no-img-element, @next/next/no-html-link-for-pages -- Admin links intentionally use full document navigation behind Cloudflare Access. */
 
 import { ClipboardEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
 import type { BlogAbout } from "@/db";
 import { formatPostDate } from "@/lib/post-date";
 import { matchesSearchQuery } from "@/lib/search";
@@ -569,7 +568,7 @@ export function FoodBlog({ adminMode = false, editorOnly = false, initialEditorS
       {adminMode && (
         <div className="admin-strip">
           <span>Trang quản trị · Chỉ dành cho tác giả</span>
-          <Link href="/">Xem trang công khai ↗</Link>
+          <a href="/">Xem trang công khai ↗</a>
         </div>
       )}
       <header className="topbar">
@@ -934,7 +933,7 @@ export function FoodBlog({ adminMode = false, editorOnly = false, initialEditorS
               <label>Địa chỉ chi tiết<input name="address" required maxLength={240} defaultValue={editingSpot?.address} placeholder="Số nhà, tên đường, phường/xã..." /></label>
               <div className="form-row">
                 <label>
-                  <span className="category-field-heading"><span>Loại món</span><Link href="/admin/categories">Quản lý loại món ↗</Link></span>
+                  <span className="category-field-heading"><span>Loại món</span><a href="/admin/categories">Quản lý loại món ↗</a></span>
                   <select
                     name="categoryId"
                     required
