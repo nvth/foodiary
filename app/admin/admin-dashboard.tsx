@@ -2,7 +2,6 @@
 
 /* eslint-disable @next/next/no-img-element -- Thumbnails are served directly from R2. */
 
-import Link from "next/link";
 import { useMemo, useState } from "react";
 import type { PublishedSpot } from "@/db";
 import { formatPostDate } from "@/lib/post-date";
@@ -54,7 +53,7 @@ export default function AdminDashboard({ initialSpots }: { initialSpots: Publish
       <section className="admin-workspace" id="posts">
         <header className="admin-page-header">
           <div><p>Quản trị nội dung</p><h1>Bài viết</h1></div>
-          <Link className="admin-primary-action" href="/admin/editor">＋ Thêm bài mới</Link>
+          <a className="admin-primary-action" href="/admin/editor">＋ Thêm bài mới</a>
         </header>
 
         <div className="admin-stats" aria-label="Thống kê bài viết">
@@ -75,12 +74,12 @@ export default function AdminDashboard({ initialSpots }: { initialSpots: Publish
               <tbody>
                 {filtered.map((spot) => (
                   <tr key={spot.id}>
-                    <td><div className="admin-post-cell"><img src={spot.image} alt="" /><span><strong>{spot.name}</strong><small>{spot.dishes.length} món · {spot.gallery.length} ảnh</small></span></div></td>
+                    <td><a className="admin-post-cell" href={`/admin/editor?id=${encodeURIComponent(spot.id)}`} aria-label={`Chỉnh sửa ${spot.name}`}><img src={spot.image} alt="" /><span><strong>{spot.name}</strong><small>{spot.dishes.length} món · {spot.gallery.length} ảnh</small></span></a></td>
                     <td>{spot.area}</td>
                     <td><span className="admin-rating">★ {spot.rating.toFixed(1)}</span></td>
                     <td><AdminPostTimestamp value={spot.postedAt} /></td>
                     <td><span className={spot.featured ? "admin-status featured" : "admin-status"}>{spot.featured ? "Nổi bật" : "Đã đăng"}</span></td>
-                    <td><div className="admin-row-actions"><Link href={`/admin/editor?id=${encodeURIComponent(spot.id)}`}>Sửa</Link><button onClick={() => deletePost(spot)} disabled={deletingId === spot.id}>{deletingId === spot.id ? "Đang xóa" : "Xóa"}</button></div></td>
+                    <td><div className="admin-row-actions"><a href={`/admin/editor?id=${encodeURIComponent(spot.id)}`}>Sửa</a><button onClick={() => deletePost(spot)} disabled={deletingId === spot.id}>{deletingId === spot.id ? "Đang xóa" : "Xóa"}</button></div></td>
                   </tr>
                 ))}
               </tbody>
