@@ -18,6 +18,9 @@ test("ships the Vietnamese food journal experience", async () => {
   assert.match(page, /Góp ý quán mới/i);
   assert.match(page, /name="hashtags"/);
   assert.match(page, /#hashtag/i);
+  assert.match(page, /normalizeSearchText/);
+  assert.match(page, /searchHashtag/);
+  assert.match(page, /Tìm bài có hashtag/);
   assert.match(page, /PostTimestamp/);
   assert.doesNotMatch(page, /Ngày ghé quán|name="visitedAt"/i);
   assert.match(page, /Về blog/i);
@@ -25,10 +28,12 @@ test("ships the Vietnamese food journal experience", async () => {
 });
 
 test("declares Cloudflare-native persistence and protected mutations", async () => {
-  const [hosting, schema, visitDateMigration, adminRoute, categoryRoute, publicCategoryRoute, adminAboutRoute, publicAboutRoute, publicSuggestionRoute, adminSuggestionRoute, adminSuggestionPage, adminSidebar, mediaRoute, adminPage, adminAuth, publicPage, envExample] = await Promise.all([
+  const [hosting, schema, visitDateMigration, suggestionRateMigration, suggestionAbuse, adminRoute, categoryRoute, publicCategoryRoute, adminAboutRoute, publicAboutRoute, publicSuggestionRoute, adminSuggestionRoute, adminSuggestionPage, adminSidebar, mediaRoute, adminPage, adminAuth, publicPage, envExample] = await Promise.all([
     readFile(new URL("../.openai/hosting.json", import.meta.url), "utf8"),
     readFile(new URL("../db/schema.ts", import.meta.url), "utf8"),
     readFile(new URL("../drizzle/0005_light_rocket_racer.sql", import.meta.url), "utf8"),
+    readFile(new URL("../drizzle/0006_handy_ares.sql", import.meta.url), "utf8"),
+    readFile(new URL("../lib/suggestion-abuse.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/api/admin/reviews/route.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/api/admin/categories/route.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/api/categories/route.ts", import.meta.url), "utf8"),
@@ -59,16 +64,23 @@ test("declares Cloudflare-native persistence and protected mutations", async () 
   assert.match(schema, /sqliteTable\(\s*"cuisine_categories"/);
   assert.match(schema, /sqliteTable\(\s*"blog_settings"/);
   assert.match(schema, /sqliteTable\(\s*"suggestions"/);
+  assert.match(schema, /sqliteTable\(\s*"suggestion_rate_limits"/);
   assert.match(schema, /hashtags: text\("hashtags"/);
   assert.doesNotMatch(schema, /visitedAt|visited_at/);
   assert.match(visitDateMigration, /DROP INDEX IF EXISTS `reviews_status_visited_idx`/);
   assert.match(visitDateMigration, /ALTER TABLE `reviews` DROP COLUMN `visited_at`/);
+  assert.match(suggestionRateMigration, /CREATE TABLE IF NOT EXISTS `suggestion_rate_limits`/);
+  assert.match(suggestionAbuse, /HMAC/);
+  assert.match(suggestionAbuse, /cf-connecting-ip/);
   assert.match(adminRoute, /requireAdmin\(request\)/);
   assert.match(categoryRoute, /requireAdmin\(request\)/);
   assert.match(publicCategoryRoute, /listCategories/);
   assert.match(adminAboutRoute, /requireAdmin\(request\)/);
   assert.match(publicAboutRoute, /getBlogAbout/);
   assert.match(publicSuggestionRoute, /export async function POST/);
+  assert.match(publicSuggestionRoute, /buildSuggestionAbuseContext/);
+  assert.match(publicSuggestionRoute, /MAX_REQUEST_BYTES/);
+  assert.match(publicSuggestionRoute, /Retry-After/);
   assert.match(adminSuggestionRoute, /requireAdmin\(request\)/);
   assert.match(adminSuggestionPage, /requireAdminPage\("\/admin\/suggestions"\)/);
   assert.match(adminSidebar, /\/admin\/suggestions/);
@@ -80,10 +92,13 @@ test("declares Cloudflare-native persistence and protected mutations", async () 
   assert.match(database, /postedAt: row\.created_at/);
   assert.doesNotMatch(database, /INSERT INTO reviews[\s\S]{0,300}visited_at/);
   assert.match(database, /reviews_status_created_idx/);
+  assert.match(database, /ON CONFLICT\(fingerprint\) DO UPDATE/);
+  assert.match(database, /SUGGESTION_RATE_LIMIT_MAX/);
   assert.match(database, /ORDER BY reviews\.is_featured DESC, reviews\.created_at DESC/);
   assert.match(adminDashboard, /Ngày giờ đăng/);
   assert.match(adminAuth, /getAdminState\(request\)/);
   assert.match(adminAuth, /redirect\("\/"\)/);
   assert.match(publicPage, /return <FoodBlog \/>/);
   assert.match(envExample, /ADMIN_EMAILS=/);
+  assert.match(envExample, /SUGGESTION_RATE_LIMIT_SECRET=/);
 });

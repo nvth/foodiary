@@ -7,6 +7,14 @@ import type {
   SuggestionListOptions,
   SuggestionStatus,
 } from "@/lib/suggestion-validation";
+import {
+  SUGGESTION_DAILY_LIMIT_HOURS,
+  SUGGESTION_DAILY_LIMIT_MAX,
+  SUGGESTION_DUPLICATE_HOURS,
+  SUGGESTION_RATE_LIMIT_MAX,
+  SUGGESTION_RATE_LIMIT_MINUTES,
+  type SuggestionAbuseContext,
+} from "@/lib/suggestion-abuse";
 
 const BLOG_SETTINGS_ID = "main";
 
@@ -88,6 +96,7 @@ type Bindings = {
   MEDIA?: R2Bucket;
   ADMIN_EMAILS?: string;
   DEV_ADMIN_BYPASS?: string;
+  SUGGESTION_RATE_LIMIT_SECRET?: string;
 };
 
 let schemaReady: Promise<void> | null = null;
@@ -183,6 +192,17 @@ async function initializeDatabase(db: D1Database): Promise<void> {
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     )`),
+    db.prepare(`CREATE TABLE IF NOT EXISTS suggestion_rate_limits (
+      fingerprint TEXT PRIMARY KEY NOT NULL,
+      window_started_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      request_count INTEGER NOT NULL DEFAULT 1,
+      daily_window_started_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      daily_request_count INTEGER NOT NULL DEFAULT 1,
+      last_message_hash TEXT NOT NULL,
+      last_message_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      duplicate_attempt INTEGER NOT NULL DEFAULT 0,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )`),
     db.prepare(`CREATE TABLE IF NOT EXISTS photos (
       id TEXT PRIMARY KEY NOT NULL,
       review_id TEXT NOT NULL REFERENCES reviews(id) ON DELETE CASCADE,
@@ -260,6 +280,12 @@ type SuggestionRow = {
   updated_at: string;
 };
 
+type SuggestionRateLimitRow = {
+  request_count: number;
+  daily_request_count: number;
+  duplicate_attempt: number;
+};
+
 export async function getBlogAbout(): Promise<BlogAbout> {
   await ensureDatabase();
   const row = await getD1()
@@ -287,18 +313,71 @@ export async function updateBlogAbout(input: BlogAbout): Promise<BlogAbout> {
   return { title: input.title, body: input.body };
 }
 
-export async function createSuggestion(input: SuggestionInput): Promise<Suggestion> {
+export async function createSuggestion(
+  input: SuggestionInput,
+  abuse: SuggestionAbuseContext,
+): Promise<void> {
   await ensureDatabase();
   const db = getD1();
+  const rate = await db.prepare(`INSERT INTO suggestion_rate_limits
+    (fingerprint, window_started_at, request_count, daily_window_started_at, daily_request_count,
+      last_message_hash, last_message_at, duplicate_attempt, updated_at)
+    VALUES (?, CURRENT_TIMESTAMP, 1, CURRENT_TIMESTAMP, 1, ?, CURRENT_TIMESTAMP, 0, CURRENT_TIMESTAMP)
+    ON CONFLICT(fingerprint) DO UPDATE SET
+      duplicate_attempt = CASE
+        WHEN suggestion_rate_limits.last_message_hash = excluded.last_message_hash
+          AND suggestion_rate_limits.last_message_at > datetime('now', '-' || ? || ' hours')
+        THEN 1 ELSE 0 END,
+      request_count = CASE
+        WHEN suggestion_rate_limits.window_started_at <= datetime('now', '-' || ? || ' minutes') THEN 1
+        ELSE suggestion_rate_limits.request_count + 1 END,
+      window_started_at = CASE
+        WHEN suggestion_rate_limits.window_started_at <= datetime('now', '-' || ? || ' minutes') THEN CURRENT_TIMESTAMP
+        ELSE suggestion_rate_limits.window_started_at END,
+      daily_request_count = CASE
+        WHEN suggestion_rate_limits.daily_window_started_at <= datetime('now', '-' || ? || ' hours') THEN 1
+        ELSE suggestion_rate_limits.daily_request_count + 1 END,
+      daily_window_started_at = CASE
+        WHEN suggestion_rate_limits.daily_window_started_at <= datetime('now', '-' || ? || ' hours') THEN CURRENT_TIMESTAMP
+        ELSE suggestion_rate_limits.daily_window_started_at END,
+      last_message_hash = excluded.last_message_hash,
+      last_message_at = CURRENT_TIMESTAMP,
+      updated_at = CURRENT_TIMESTAMP
+    RETURNING request_count, daily_request_count, duplicate_attempt`)
+    .bind(
+      abuse.fingerprint,
+      abuse.messageHash,
+      SUGGESTION_DUPLICATE_HOURS,
+      SUGGESTION_RATE_LIMIT_MINUTES,
+      SUGGESTION_RATE_LIMIT_MINUTES,
+      SUGGESTION_DAILY_LIMIT_HOURS,
+      SUGGESTION_DAILY_LIMIT_HOURS,
+    )
+    .first<SuggestionRateLimitRow>();
+  if (!rate) throw new Error("Unable to update the suggestion rate limit");
+  if (rate.request_count > SUGGESTION_RATE_LIMIT_MAX) {
+    throw httpError(
+      `Bạn gửi góp ý hơi nhanh. Vui lòng thử lại sau ${SUGGESTION_RATE_LIMIT_MINUTES} phút.`,
+      429,
+      SUGGESTION_RATE_LIMIT_MINUTES * 60,
+    );
+  }
+  if (rate.daily_request_count > SUGGESTION_DAILY_LIMIT_MAX) {
+    throw httpError(
+      "Bạn đã gửi khá nhiều góp ý hôm nay. Vui lòng thử lại vào ngày mai.",
+      429,
+      SUGGESTION_DAILY_LIMIT_HOURS * 60 * 60,
+    );
+  }
+  if (Boolean(rate.duplicate_attempt)) {
+    return;
+  }
+
   const id = crypto.randomUUID();
   await db.prepare(`INSERT INTO suggestions (id, username, message, status)
     VALUES (?, ?, ?, 'unread')`)
     .bind(id, input.username, input.message)
     .run();
-
-  const suggestion = await findSuggestionById(db, id);
-  if (!suggestion) throw new Error("Unable to read the newly created suggestion");
-  return suggestion;
 }
 
 export async function listSuggestions(options: SuggestionListOptions): Promise<Suggestion[]> {
@@ -812,8 +891,8 @@ function slugify(value: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
-function httpError(message: string, status: number): Error {
+function httpError(message: string, status: number, retryAfterSeconds?: number): Error {
   const error = new Error(message);
-  Object.assign(error, { status });
+  Object.assign(error, { status, retryAfterSeconds });
   return error;
 }

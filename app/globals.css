@@ -255,7 +255,8 @@ h1 em { color: var(--red); font-weight: 400; }
 .card-title:hover { color: var(--red); }
 .food-card > p { color: #6c6961; line-height: 1.65; font-size: 13px; margin-bottom: 19px; max-width: 570px; }
 .post-hashtags { display: flex; flex-wrap: wrap; gap: 6px; margin: -6px 0 17px; }
-.post-hashtags span { padding: 5px 8px; border: 1px solid #d8d0c2; border-radius: 999px; background: #eee8dc; color: #5d5a52; font-size: 9px; line-height: 1; }
+.post-hashtags button { padding: 5px 8px; border: 1px solid #d8d0c2; border-radius: 999px; background: #eee8dc; color: #5d5a52; cursor: pointer; font: inherit; font-size: 9px; line-height: 1; }
+.post-hashtags button:hover, .post-hashtags button:focus-visible { border-color: var(--red); background: #f7e5df; color: var(--red-dark); outline: none; }
 .card-footer { display: flex; justify-content: space-between; gap: 10px; padding-top: 13px; border-top: 1px solid #e1ddd2; color: #8a867d; font-size: 10px; }
 .card-footer strong { color: #5f5b53; font-weight: 600; }
 .empty-state { grid-column: 1 / -1; padding: 80px 20px; text-align: center; border: 1px dashed var(--line); }

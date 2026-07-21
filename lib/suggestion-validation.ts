@@ -1,5 +1,6 @@
 export const MAX_SUGGESTION_USERNAME_LENGTH = 60;
 export const MAX_SUGGESTION_MESSAGE_LENGTH = 1200;
+export const MIN_SUGGESTION_MESSAGE_LENGTH = 5;
 export const MAX_SUGGESTIONS_PER_PAGE = 100;
 
 export type SuggestionStatus = "unread" | "read";
@@ -92,6 +93,9 @@ function requiredMessage(value: unknown): string {
     .replace(/\n{3,}/g, "\n\n")
     .trim();
   if (!message) throw badRequest("Nội dung góp ý là bắt buộc.");
+  if ([...message].length < MIN_SUGGESTION_MESSAGE_LENGTH) {
+    throw badRequest(`Nội dung góp ý cần ít nhất ${MIN_SUGGESTION_MESSAGE_LENGTH} ký tự.`);
+  }
   if ([...message].length > MAX_SUGGESTION_MESSAGE_LENGTH) {
     throw badRequest(`Nội dung góp ý không được quá ${MAX_SUGGESTION_MESSAGE_LENGTH} ký tự.`);
   }

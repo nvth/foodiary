@@ -6,6 +6,7 @@ import { ClipboardEvent, FormEvent, useEffect, useMemo, useRef, useState } from 
 import Link from "next/link";
 import type { BlogAbout } from "@/db";
 import { formatPostDate } from "@/lib/post-date";
+import { normalizeSearchText } from "@/lib/search";
 
 type StoredPhoto = {
   objectKey: string;
@@ -55,13 +56,13 @@ type MutationResponse = { error?: string; id?: string; deleted?: boolean; update
 type SuggestionResponse = {
   accepted?: boolean;
   error?: string;
-  suggestion?: { id: string; username: string | null; message: string };
 };
 
 const acceptedImageTypes = new Set(["image/jpeg", "image/png", "image/webp", "image/avif"]);
 const maxImageBytes = 8 * 1024 * 1024;
 const maxSuggestionUsernameLength = 60;
 const maxSuggestionMessageLength = 1_200;
+const minSuggestionMessageLength = 5;
 const fallbackAbout: BlogAbout = {
   title: "Mỗi tuần một câu chuyện ngon.",
   body: "Một email nhỏ về quán mới, món ngon và những góc phố mình vừa đi qua.",
@@ -381,18 +382,35 @@ export function FoodBlog({ adminMode = false, editorOnly = false, initialEditorS
   }, [lightboxOpen, selectedGallery.length]);
 
   const filtered = useMemo(() => {
-    const normalized = query.trim().toLowerCase();
+    const normalized = normalizeSearchText(query);
     const selectedCategory = managedCategories.find((item) => item.id === categoryId);
     return allSpots.filter((spot) => {
       const inCategory = categoryId === "all"
         || spot.categoryId === categoryId
         || (!spot.categoryId && spot.cuisine === selectedCategory?.name);
-      const hashtagText = (spot.hashtags ?? []).flatMap((tag) => [tag, `#${tag}`]).join(" ");
+      const hashtagText = (spot.hashtags ?? []).join(" ");
       const inSearch = !normalized
-        || `${spot.name} ${spot.dish} ${spot.area} ${spot.cuisine} ${hashtagText}`.toLowerCase().includes(normalized);
+        || normalizeSearchText(
+          `${spot.name} ${spot.dish} ${spot.area} ${spot.address} ${spot.cuisine} ${spot.excerpt} ${hashtagText}`,
+        ).includes(normalized);
       return inCategory && inSearch;
     });
   }, [allSpots, categoryId, managedCategories, query]);
+
+  function searchHashtag(tag: string) {
+    setQuery(`#${tag}`);
+    setCategoryId("all");
+    setSelected(null);
+    setLightboxOpen(false);
+    window.requestAnimationFrame(() => {
+      document.getElementById("reviews")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }
+
+  function handleSearchChange(value: string) {
+    setQuery(value);
+    if (value.trim()) setCategoryId("all");
+  }
 
   function selectImages(files: File[], append = false): boolean {
     const nextFiles = append ? [...selectedFiles, ...files] : files;
@@ -431,6 +449,11 @@ export function FoodBlog({ adminMode = false, editorOnly = false, initialEditorS
     }
     if (!message) {
       setSuggestionError("Bạn hãy nhập nội dung góp ý nhé.");
+      setSuggestionSuccess("");
+      return;
+    }
+    if ([...message].length < minSuggestionMessageLength) {
+      setSuggestionError(`Nội dung cần ít nhất ${minSuggestionMessageLength} ký tự.`);
       setSuggestionSuccess("");
       return;
     }
@@ -763,7 +786,7 @@ export function FoodBlog({ adminMode = false, editorOnly = false, initialEditorS
           <label className="search">
             <span aria-hidden="true">⌕</span>
             <span className="sr-only">Tìm quán, món ăn hoặc hashtag</span>
-            <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Tìm quán, món hoặc #hashtag..." />
+            <input type="search" value={query} onChange={(event) => handleSearchChange(event.target.value)} placeholder="Tìm quán, món hoặc #hashtag..." />
           </label>
         </div>
 
@@ -796,7 +819,11 @@ export function FoodBlog({ adminMode = false, editorOnly = false, initialEditorS
                 <p>{spot.excerpt}</p>
                 {!!spot.hashtags?.length && (
                   <div className="post-hashtags" aria-label="Hashtag bài viết">
-                    {spot.hashtags.map((tag) => <span key={tag}>#{tag}</span>)}
+                    {spot.hashtags.map((tag) => (
+                      <button type="button" key={tag} onClick={() => searchHashtag(tag)} aria-label={`Tìm bài có hashtag ${tag}`}>
+                        #{tag}
+                      </button>
+                    ))}
                   </div>
                 )}
                 <div className="card-footer">
@@ -836,6 +863,7 @@ export function FoodBlog({ adminMode = false, editorOnly = false, initialEditorS
                 id="suggestion-message"
                 name="message"
                 required
+                minLength={minSuggestionMessageLength}
                 maxLength={maxSuggestionMessageLength}
                 rows={5}
                 disabled={isSuggestionSending}
@@ -915,7 +943,11 @@ export function FoodBlog({ adminMode = false, editorOnly = false, initialEditorS
               <h2 id="review-title">{selected.name}</h2>
               {!!selected.hashtags?.length && (
                 <div className="post-hashtags review-hashtags" aria-label="Hashtag bài viết">
-                  {selected.hashtags.map((tag) => <span key={tag}>#{tag}</span>)}
+                  {selected.hashtags.map((tag) => (
+                    <button type="button" key={tag} onClick={() => searchHashtag(tag)} aria-label={`Tìm bài có hashtag ${tag}`}>
+                      #{tag}
+                    </button>
+                  ))}
                 </div>
               )}
               <div className="review-menu">

@@ -82,6 +82,18 @@ export const suggestions = sqliteTable(
   ],
 );
 
+export const suggestionRateLimits = sqliteTable("suggestion_rate_limits", {
+  fingerprint: text("fingerprint").primaryKey(),
+  windowStartedAt: text("window_started_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  requestCount: integer("request_count").notNull().default(1),
+  dailyWindowStartedAt: text("daily_window_started_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  dailyRequestCount: integer("daily_request_count").notNull().default(1),
+  lastMessageHash: text("last_message_hash").notNull(),
+  lastMessageAt: text("last_message_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  duplicateAttempt: integer("duplicate_attempt", { mode: "boolean" }).notNull().default(false),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+});
+
 export const photos = sqliteTable(
   "photos",
   {
