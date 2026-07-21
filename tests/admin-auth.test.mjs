@@ -216,7 +216,7 @@ test("valid Cloudflare Access JWT is verified by remote JWKS before identity inj
     },
   }), {
     TEAM_DOMAIN: "team.cloudflareaccess.com",
-    POLICY_AUD: audience,
+    POLICY_AUD: `retired-application-audience, ${audience}`,
     ADMIN_EMAILS: "other@example.com, owner@example.com",
   }, context());
 

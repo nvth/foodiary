@@ -31,7 +31,7 @@ export default function CategoryManager({ initialCategories }: { initialCategori
   const [message, setMessage] = useState("");
 
   async function refreshCategories() {
-    const response = await fetch("/api/admin/categories", { cache: "no-store" });
+    const response = await fetch("/admin/api/categories", { cache: "no-store" });
     const data = await responseData(response);
     if (!response.ok || !Array.isArray(data.categories)) {
       throw new Error(data.error ?? "Không thể tải lại danh sách loại món.");
@@ -47,7 +47,7 @@ export default function CategoryManager({ initialCategories }: { initialCategori
     setError("");
     setMessage("");
     try {
-      const response = await fetch("/api/admin/categories", {
+      const response = await fetch("/admin/api/categories", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name }),
@@ -79,7 +79,7 @@ export default function CategoryManager({ initialCategories }: { initialCategori
     setError("");
     setMessage("");
     try {
-      const response = await fetch(`/api/admin/categories?id=${encodeURIComponent(category.id)}`, {
+      const response = await fetch(`/admin/api/categories?id=${encodeURIComponent(category.id)}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name }),
@@ -104,7 +104,7 @@ export default function CategoryManager({ initialCategories }: { initialCategori
     setError("");
     setMessage("");
     try {
-      const response = await fetch(`/api/admin/categories?id=${encodeURIComponent(category.id)}`, { method: "DELETE" });
+      const response = await fetch(`/admin/api/categories?id=${encodeURIComponent(category.id)}`, { method: "DELETE" });
       const data = await responseData(response);
       if (!response.ok) {
         if (response.status === 409) {

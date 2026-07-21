@@ -56,7 +56,7 @@ export default function AboutEditor({ initialAbout }: { initialAbout: BlogAbout 
     setError("");
     setMessage("");
     try {
-      const response = await fetch("/api/admin/about", {
+      const response = await fetch("/admin/api/about", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title: nextTitle, body: nextBody }),

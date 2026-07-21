@@ -36,7 +36,7 @@ export default function AdminDashboard({ initialSpots }: { initialSpots: Publish
     if (!window.confirm(`Xóa bài “${spot.name}” cùng toàn bộ ảnh?`)) return;
     setDeletingId(spot.id);
     try {
-      const response = await fetch(`/api/admin/reviews?id=${encodeURIComponent(spot.id)}`, { method: "DELETE" });
+      const response = await fetch(`/admin/api/reviews?id=${encodeURIComponent(spot.id)}`, { method: "DELETE" });
       const data = await response.json() as { error?: string };
       if (!response.ok) throw new Error(data.error ?? "Không thể xóa bài review.");
       setSpots((current) => current.filter((item) => item.id !== spot.id));

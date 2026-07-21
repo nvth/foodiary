@@ -37,7 +37,7 @@ const remoteJwksByIssuer = new Map<string, ReturnType<typeof createRemoteJWKSet>
 
 type AccessConfig = {
   issuer: string;
-  audience: string;
+  audience: string | string[];
   allowedEmails: Set<string>;
 };
 
@@ -64,14 +64,17 @@ export function isLoopbackHostname(hostname: string): boolean {
 
 function parseAccessConfig(env: Env): AccessConfig | null {
   const teamDomain = env.TEAM_DOMAIN?.trim();
-  const audience = env.POLICY_AUD?.trim();
+  const audiences = (env.POLICY_AUD ?? "")
+    .split(",")
+    .map((audience) => audience.trim())
+    .filter(Boolean);
   const allowedEmails = new Set(
     (env.ADMIN_EMAILS ?? "")
       .split(",")
       .map((email) => email.trim().toLowerCase())
       .filter(Boolean),
   );
-  if (!teamDomain || !audience || allowedEmails.size === 0) return null;
+  if (!teamDomain || audiences.length === 0 || allowedEmails.size === 0) return null;
 
   try {
     const teamUrl = new URL(teamDomain.includes("://") ? teamDomain : `https://${teamDomain}`);
@@ -85,7 +88,11 @@ function parseAccessConfig(env: Env): AccessConfig | null {
     ) {
       return null;
     }
-    return { issuer: teamUrl.origin, audience, allowedEmails };
+    return {
+      issuer: teamUrl.origin,
+      audience: audiences.length === 1 ? audiences[0] : audiences,
+      allowedEmails,
+    };
   } catch {
     return null;
   }

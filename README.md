@@ -68,7 +68,7 @@ ADMIN_EMAILS=email-cua-ban@example.com
 SUGGESTION_RATE_LIMIT_SECRET=chuoi-bi-mat-dai-ngau-nhien
 ```
 
-`TEAM_DOMAIN` là hostname (hoặc HTTPS origin) của Cloudflare Access team và `POLICY_AUD` là Audience tag của Access Application. Có thể liệt kê nhiều email trong `ADMIN_EMAILS`, phân tách bằng dấu phẩy. Không đặt `DEV_ADMIN_BYPASS=true` trong production.
+`TEAM_DOMAIN` là hostname (hoặc HTTPS origin) của Cloudflare Access team và `POLICY_AUD` chứa một hoặc nhiều Audience tag của Access Application, phân tách bằng dấu phẩy. Có thể liệt kê nhiều email trong `ADMIN_EMAILS` theo cùng cách. Không đặt `DEV_ADMIN_BYPASS=true` trong production.
 
 ## Bảo vệ khu vực viết bài
 

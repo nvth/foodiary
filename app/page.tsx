@@ -159,7 +159,7 @@ export function FoodBlog({ adminMode = false, editorOnly = false, initialEditorS
   useEffect(() => {
     let cancelled = false;
     const sessionRequest: Promise<SessionResponse> = adminMode
-      ? fetch("/api/admin/session", { headers: { accept: "application/json" } }).then((response) => response.json() as Promise<SessionResponse>)
+      ? fetch("/admin/api/session", { headers: { accept: "application/json" } }).then((response) => response.json() as Promise<SessionResponse>)
       : Promise.resolve({ isAdmin: false });
     const aboutRequest: Promise<AboutResponse> = adminMode
       ? Promise.resolve({})
@@ -389,7 +389,7 @@ export function FoodBlog({ adminMode = false, editorOnly = false, initialEditorS
       for (const [photoIndex, file] of selectedFiles.entries()) {
         const upload = new FormData();
         upload.set("file", file);
-        const response = await fetch("/api/admin/media", { method: "POST", body: upload });
+        const response = await fetch("/admin/api/media", { method: "POST", body: upload });
         const data = (await response.json()) as UploadResponse;
         if (!response.ok) throw new Error(data.error ?? "Không thể tải ảnh lên.");
         if (!data.objectKey || !data.contentType || !data.sizeBytes) {
@@ -406,8 +406,8 @@ export function FoodBlog({ adminMode = false, editorOnly = false, initialEditorS
 
       const isEditing = editingSpot && typeof editingSpot.id === "string";
       const endpoint = isEditing
-        ? `/api/admin/reviews?id=${encodeURIComponent(editingSpot.id as string)}`
-        : "/api/admin/reviews";
+        ? `/admin/api/reviews?id=${encodeURIComponent(editingSpot.id as string)}`
+        : "/admin/api/reviews";
       const response = await fetch(endpoint, {
         method: isEditing ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
@@ -451,7 +451,7 @@ export function FoodBlog({ adminMode = false, editorOnly = false, initialEditorS
       if (!reviewSaved && uploadedKeys.length) {
         await Promise.allSettled(
           uploadedKeys.map((key) =>
-            fetch(`/api/admin/media?key=${encodeURIComponent(key)}`, { method: "DELETE" }),
+            fetch(`/admin/api/media?key=${encodeURIComponent(key)}`, { method: "DELETE" }),
           ),
         );
       }
@@ -463,7 +463,7 @@ export function FoodBlog({ adminMode = false, editorOnly = false, initialEditorS
 
   async function handleDelete(reviewId: string) {
     if (!window.confirm("Xóa bài review này và toàn bộ ảnh?")) return;
-    const response = await fetch(`/api/admin/reviews?id=${encodeURIComponent(reviewId)}`, { method: "DELETE" });
+    const response = await fetch(`/admin/api/reviews?id=${encodeURIComponent(reviewId)}`, { method: "DELETE" });
     const data = (await response.json()) as MutationResponse;
     if (!response.ok) {
       window.alert(data.error ?? "Không thể xóa bài review.");

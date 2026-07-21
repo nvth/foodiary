@@ -42,7 +42,7 @@ async function responseData(response: Response): Promise<SuggestionsResponse> {
 }
 
 async function requestSuggestions(signal?: AbortSignal): Promise<AdminSuggestion[]> {
-  const response = await fetch("/api/admin/suggestions?limit=100", {
+  const response = await fetch("/admin/api/suggestions?limit=100", {
     cache: "no-store",
     signal,
   });
@@ -145,7 +145,7 @@ export default function SuggestionsInbox() {
     beginAction(suggestion.id, "status");
 
     try {
-      const response = await fetch(`/api/admin/suggestions?id=${encodeURIComponent(suggestion.id)}`, {
+      const response = await fetch(`/admin/api/suggestions?id=${encodeURIComponent(suggestion.id)}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: nextStatus }),
@@ -172,7 +172,7 @@ export default function SuggestionsInbox() {
 
     beginAction(suggestion.id, "delete");
     try {
-      const response = await fetch(`/api/admin/suggestions?id=${encodeURIComponent(suggestion.id)}`, {
+      const response = await fetch(`/admin/api/suggestions?id=${encodeURIComponent(suggestion.id)}`, {
         method: "DELETE",
       });
       const data = await responseData(response);
