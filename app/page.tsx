@@ -5,6 +5,7 @@
 import { ClipboardEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import type { BlogAbout } from "@/db";
+import { formatPostDate } from "@/lib/post-date";
 
 type StoredPhoto = {
   objectKey: string;
@@ -33,6 +34,7 @@ export type Spot = {
   galleryCaptions?: string[];
   photos?: StoredPhoto[];
   date: string;
+  postedAt?: string;
   favorite?: boolean;
   featured?: boolean;
   dishes?: ReviewDish[];
@@ -93,6 +95,7 @@ const spots: Spot[] = [
     image:
       "https://images.unsplash.com/photo-1559314809-0d155014e29e?auto=format&fit=crop&w=1400&q=85",
     date: "18.07.2026",
+    postedAt: "2026-07-18T09:15:00+07:00",
     favorite: true,
     hashtags: ["mì quảng", "miền trung"],
   },
@@ -111,6 +114,7 @@ const spots: Spot[] = [
     image:
       "https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?auto=format&fit=crop&w=1000&q=85",
     date: "12.07.2026",
+    postedAt: "2026-07-12T19:40:00+07:00",
     hashtags: ["phở", "ăn sáng"],
   },
   {
@@ -128,6 +132,7 @@ const spots: Spot[] = [
     image:
       "https://images.unsplash.com/photo-1579751626657-72bc17010498?auto=format&fit=crop&w=1000&q=85",
     date: "05.07.2026",
+    postedAt: "2026-07-05T11:20:00+07:00",
     hashtags: ["pizza", "hẹn hò"],
   },
   {
@@ -145,6 +150,7 @@ const spots: Spot[] = [
     image:
       "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?auto=format&fit=crop&w=1000&q=85",
     date: "28.06.2026",
+    postedAt: "2026-06-28T20:05:00+07:00",
   },
   {
     id: 5,
@@ -161,6 +167,7 @@ const spots: Spot[] = [
     image:
       "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&w=1000&q=85",
     date: "22.06.2026",
+    postedAt: "2026-06-22T12:10:00+07:00",
   },
   {
     id: 6,
@@ -177,6 +184,7 @@ const spots: Spot[] = [
     image:
       "https://images.unsplash.com/photo-1445116572660-236099ec97a0?auto=format&fit=crop&w=1000&q=85",
     date: "15.06.2026",
+    postedAt: "2026-06-15T08:30:00+07:00",
   },
 ];
 
@@ -240,6 +248,12 @@ function galleryCaptionsFor(spot: Spot, gallery: string[]) {
 
 function Stars({ rating }: { rating: number }) {
   return <span className="rating"><span aria-hidden="true">★</span> {rating.toFixed(1)}</span>;
+}
+
+function PostTimestamp({ value, prefix = "Đăng lúc" }: { value?: string; prefix?: string }) {
+  const timestamp = formatPostDate(value);
+  if (!timestamp) return null;
+  return <time dateTime={timestamp.dateTime}>{prefix ? `${prefix} ` : ""}{timestamp.label}</time>;
 }
 
 type FoodBlogProps = {
@@ -740,7 +754,7 @@ export function FoodBlog({ adminMode = false, editorOnly = false, initialEditorS
           <span className="image-shade" />
           <span className="featured-label">Bài mới nhất</span>
           <span className="featured-content">
-            <span>{featuredSpot.area} · {featuredSpot.date}</span>
+            <span>{featuredSpot.area} · <PostTimestamp value={featuredSpot.postedAt} /></span>
             <strong>{featuredSpot.name}</strong>
             <small>{featuredSpot.excerpt}</small>
           </span>
@@ -785,6 +799,7 @@ export function FoodBlog({ adminMode = false, editorOnly = false, initialEditorS
                   <span>{spot.area} · {spot.cuisine}</span>
                   <Stars rating={spot.rating} />
                 </div>
+                <div className="card-posted-at"><PostTimestamp value={spot.postedAt} /></div>
                 <button className="card-title" onClick={() => openSpot(spot)}>{spot.name}</button>
                 <p>{spot.excerpt}</p>
                 {!!spot.hashtags?.length && (
@@ -901,10 +916,10 @@ export function FoodBlog({ adminMode = false, editorOnly = false, initialEditorS
             <div className="review-body">
               <div className="post-author">
                 <img className="author-avatar" src="/frog-logo.png" alt="" aria-hidden="true" />
-                <span><strong>andauhomnay</strong><small>{selected.area} · Nhật ký vị giác</small></span>
+                <span><strong>andauhomnay</strong><small>Nhật ký vị giác · <PostTimestamp value={selected.postedAt} /></small></span>
                 <button aria-label="Lưu bài viết">♡</button>
               </div>
-              <div className="review-kicker"><span>{selected.area} · {selected.date}</span><Stars rating={selected.rating} /></div>
+              <div className="review-kicker"><span>{selected.area} · Ngày ghé {selected.date}</span><Stars rating={selected.rating} /></div>
               <h2 id="review-title">{selected.name}</h2>
               {!!selected.hashtags?.length && (
                 <div className="post-hashtags review-hashtags" aria-label="Hashtag bài viết">

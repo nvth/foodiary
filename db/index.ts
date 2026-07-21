@@ -64,6 +64,7 @@ export type PublishedSpot = {
     sizeBytes: number;
   }>;
   date: string;
+  postedAt: string;
   favorite: boolean;
   featured: boolean;
   dishes: Array<{ id: string; name: string; photoIndex: number }>;
@@ -439,6 +440,7 @@ type ReviewRow = {
   content: string;
   hashtags: string;
   visited_at: string;
+  created_at: string;
   is_favorite: number;
   is_featured: number;
 };
@@ -593,6 +595,7 @@ export async function listPublishedSpots(): Promise<PublishedSpot[]> {
       reviews.content,
       reviews.hashtags,
       reviews.visited_at,
+      reviews.created_at,
       reviews.is_favorite,
       reviews.is_featured
     FROM reviews
@@ -644,6 +647,7 @@ export async function listPublishedSpots(): Promise<PublishedSpot[]> {
       galleryCaptions: photos.map((photo) => photo.caption),
       photos,
       date: row.visited_at,
+      postedAt: row.created_at,
       favorite: Boolean(row.is_favorite),
       featured: Boolean(row.is_featured),
       dishes: dishesByReview.get(row.id) ?? [{ id: `${row.id}-primary`, name: row.dish, photoIndex: 0 }],

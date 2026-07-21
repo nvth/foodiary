@@ -18,6 +18,8 @@ test("ships the Vietnamese food journal experience", async () => {
   assert.match(page, /Góp ý quán mới/i);
   assert.match(page, /name="hashtags"/);
   assert.match(page, /#hashtag/i);
+  assert.match(page, /PostTimestamp/);
+  assert.match(page, /Ngày ghé/i);
   assert.match(page, /Về blog/i);
   assert.doesNotMatch(page, /codex-preview|Your site is taking shape|react-loading-skeleton/i);
 });
@@ -43,6 +45,10 @@ test("declares Cloudflare-native persistence and protected mutations", async () 
   ]);
 
   const hostingConfig = JSON.parse(hosting);
+  const [database, adminDashboard] = await Promise.all([
+    readFile(new URL("../db/index.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/admin/admin-dashboard.tsx", import.meta.url), "utf8"),
+  ]);
   assert.equal(hostingConfig.d1, "DB");
   assert.equal(hostingConfig.r2, "MEDIA");
   assert.match(hostingConfig.project_id, /^appgprj_/);
@@ -66,6 +72,9 @@ test("declares Cloudflare-native persistence and protected mutations", async () 
   assert.doesNotMatch(adminSidebar, /href="\/admin\/editor"/);
   assert.match(mediaRoute, /MAX_IMAGE_BYTES/);
   assert.match(adminPage, /<AdminDashboard/);
+  assert.match(database, /reviews\.created_at/);
+  assert.match(database, /postedAt: row\.created_at/);
+  assert.match(adminDashboard, /Ngày giờ đăng/);
   assert.match(adminAuth, /getAdminState\(request\)/);
   assert.match(adminAuth, /redirect\("\/"\)/);
   assert.match(publicPage, /return <FoodBlog \/>/);

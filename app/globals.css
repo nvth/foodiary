@@ -62,7 +62,7 @@ a { color: inherit; text-decoration: none; }
 .admin-panel-toolbar input { width: 100%; padding: 10px 12px; border: 1px solid #d8d2c8; border-radius: 4px; background: white; outline: 0; font-size: 11px; }
 .admin-panel-toolbar input:focus { border-color: var(--red); }
 .admin-table-wrap { overflow-x: auto; }
-.admin-post-table { width: 100%; min-width: 780px; border-collapse: collapse; }
+.admin-post-table { width: 100%; min-width: 920px; border-collapse: collapse; }
 .admin-post-table th { padding: 11px 15px; border-bottom: 1px solid #e3ded4; background: #f5f2eb; color: #7c7971; text-align: left; font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: .09em; }
 .admin-post-table td { padding: 13px 15px; border-bottom: 1px solid #ebe7de; color: #5e5c55; font-size: 10px; vertical-align: middle; }
 .admin-post-table tbody tr:last-child td { border-bottom: 0; }
@@ -73,6 +73,7 @@ a { color: inherit; text-decoration: none; }
 .admin-post-cell strong { color: #292923; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .admin-post-cell small { color: #8c8980; font-size: 8px; }
 .admin-rating { color: #a76421; font-weight: 700; }
+.admin-posted-at { color: #55534c; white-space: nowrap; }
 .admin-status { display: inline-flex; padding: 5px 8px; border-radius: 999px; background: #e8eee8; color: #49604d; font-size: 8px; font-weight: 700; }
 .admin-status.featured { background: #f6e8df; color: #a14935; }
 .admin-row-actions { display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
@@ -247,6 +248,7 @@ h1 em { color: var(--red); font-weight: 400; }
 .image-number { position: absolute; left: 13px; bottom: 10px; font: 500 13px var(--font-serif); color: white; text-shadow: 0 1px 8px #000; }
 .favorite { position: absolute; top: 14px; left: 14px; padding: 6px 10px; background: #f4e7bc; color: #6f501b; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; }
 .card-meta { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 17px; font-size: 9px; text-transform: uppercase; letter-spacing: .11em; color: #858177; }
+.card-posted-at { margin-top: 7px; color: #6f6b63; font-size: 10px; letter-spacing: .02em; }
 .rating { color: var(--ink); font-size: 11px; letter-spacing: 0; font-weight: 600; white-space: nowrap; }
 .rating > span { color: #d4862f; margin-right: 2px; }
 .card-title { display: block; border: 0; padding: 0; margin: 8px 0 8px; background: none; text-align: left; cursor: pointer; font: 500 27px/1.3 var(--font-serif); letter-spacing: -.03em; font-kerning: normal; transition: color .2s; }
