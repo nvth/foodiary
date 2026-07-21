@@ -18,7 +18,7 @@ test("ships the Vietnamese food journal experience", async () => {
   assert.match(page, /Góp ý quán mới/i);
   assert.match(page, /name="hashtags"/);
   assert.match(page, /#hashtag/i);
-  assert.match(page, /normalizeSearchText/);
+  assert.match(page, /matchesSearchQuery/);
   assert.match(page, /searchHashtag/);
   assert.match(page, /Tìm bài có hashtag/);
   assert.match(page, /PostTimestamp/);

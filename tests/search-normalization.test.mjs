@@ -22,3 +22,15 @@ test("normalizes Vietnamese hashtag searches", async () => {
   assert.equal(normalizeSearchText("＃ＭÌ QUẢNG"), "mi quang");
   assert.equal(normalizeSearchText("#Bún   riêu"), "bun rieu");
 });
+
+test("restricts explicit hashtag searches to hashtag values", async () => {
+  const { matchesSearchQuery } = await loadSearchModule();
+  const searchableText = "Bún riêu cua ở Hà Nội";
+
+  assert.equal(matchesSearchQuery("#hà nội", searchableText, []), false);
+  assert.equal(matchesSearchQuery("#hà nội", "Một bài viết khác", ["Hà Nội"]), true);
+  assert.equal(matchesSearchQuery("＃HÀ NỘI", "Một bài viết khác", ["hà nội"]), true);
+  assert.equal(matchesSearchQuery("#bún", "Một bài viết khác", ["bún riêu"]), true);
+  assert.equal(matchesSearchQuery("#", searchableText, ["hà nội"]), false);
+  assert.equal(matchesSearchQuery("Hà Nội", searchableText, []), true);
+});

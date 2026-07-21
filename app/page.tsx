@@ -6,7 +6,7 @@ import { ClipboardEvent, FormEvent, useEffect, useMemo, useRef, useState } from 
 import Link from "next/link";
 import type { BlogAbout } from "@/db";
 import { formatPostDate } from "@/lib/post-date";
-import { normalizeSearchText } from "@/lib/search";
+import { matchesSearchQuery } from "@/lib/search";
 import ThemeToggle from "./theme-toggle";
 
 type StoredPhoto = {
@@ -383,17 +383,16 @@ export function FoodBlog({ adminMode = false, editorOnly = false, initialEditorS
   }, [lightboxOpen, selectedGallery.length]);
 
   const filtered = useMemo(() => {
-    const normalized = normalizeSearchText(query);
     const selectedCategory = managedCategories.find((item) => item.id === categoryId);
     return allSpots.filter((spot) => {
       const inCategory = categoryId === "all"
         || spot.categoryId === categoryId
         || (!spot.categoryId && spot.cuisine === selectedCategory?.name);
-      const hashtagText = (spot.hashtags ?? []).join(" ");
-      const inSearch = !normalized
-        || normalizeSearchText(
-          `${spot.name} ${spot.dish} ${spot.area} ${spot.address} ${spot.cuisine} ${spot.excerpt} ${hashtagText}`,
-        ).includes(normalized);
+      const inSearch = matchesSearchQuery(
+        query,
+        `${spot.name} ${spot.dish} ${spot.area} ${spot.address} ${spot.cuisine} ${spot.excerpt}`,
+        spot.hashtags,
+      );
       return inCategory && inSearch;
     });
   }, [allSpots, categoryId, managedCategories, query]);
