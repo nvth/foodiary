@@ -80,161 +80,9 @@ function imageSelectionError(files: File[], totalFiles = files.length): string |
   return null;
 }
 
-const spots: Spot[] = [
-  {
-    id: 1,
-    name: "Bếp Nhà Xứ Quảng",
-    area: "Quận 3",
-    address: "16 Trần Cao Vân, Phường 6, Quận 3, TP.HCM",
-    cuisine: "Miền Trung",
-    dish: "Mì Quảng tôm thịt",
-    rating: 4.8,
-    price: "85K",
-    excerpt: "Sợi mì mềm vừa, nước dùng đậm đà và chén mắm ớt khiến mình nhớ mãi.",
-    review:
-      "Mình ghé vào một chiều mưa và gọi tô đặc biệt. Nước dùng ít đúng kiểu Quảng, vị ngọt tự nhiên từ xương chứ không gắt. Tôm tươi, thịt mềm, bánh tráng giòn và rau sống rất sạch. Không gian nhỏ nhưng ấm cúng, nhân viên dễ thương. Đây là quán mình chắc chắn sẽ quay lại.",
-    image:
-      "https://images.unsplash.com/photo-1559314809-0d155014e29e?auto=format&fit=crop&w=1400&q=85",
-    postedAt: "2026-07-18T09:15:00+07:00",
-    favorite: true,
-    hashtags: ["mì quảng", "miền trung"],
-  },
-  {
-    id: 2,
-    name: "Phở Thìn 13 Lò Đúc",
-    area: "Quận 1",
-    address: "13 Nguyễn Thiệp, Bến Nghé, Quận 1, TP.HCM",
-    cuisine: "Món Việt",
-    dish: "Phở bò tái lăn",
-    rating: 4.6,
-    price: "75K",
-    excerpt: "Nước phở béo thơm, thịt bò xào săn cạnh và rất nhiều hành lá.",
-    review:
-      "Một tô phở có cá tính rất riêng: thơm mùi bò xào, nước dùng đậm và béo hơn kiểu phở truyền thống. Mình thích nhất phần thịt tái lăn mềm nhưng vẫn có cạnh xém thơm. Quán khá đông vào buổi trưa nên nên đi sớm một chút.",
-    image:
-      "https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?auto=format&fit=crop&w=1000&q=85",
-    postedAt: "2026-07-12T19:40:00+07:00",
-    hashtags: ["phở", "ăn sáng"],
-  },
-  {
-    id: 3,
-    name: "Pizza 4P's",
-    area: "Thảo Điền",
-    address: "48/1 Xuân Thủy, Thảo Điền, TP. Thủ Đức, TP.HCM",
-    cuisine: "Âu · Nhật",
-    dish: "Burrata Parma Ham",
-    rating: 4.9,
-    price: "320K",
-    excerpt: "Burrata làm tại chỗ, đế bánh mỏng cháy cạnh và cân bằng hoàn hảo.",
-    review:
-      "Chiếc pizza nửa burrata nửa parma ham vẫn luôn là lựa chọn an toàn của mình. Phô mai tươi mát, béo nhẹ; cà chua có độ chua vừa đủ để tổng thể không bị ngấy. Không gian bếp mở tạo cảm giác rất vui và gần gũi.",
-    image:
-      "https://images.unsplash.com/photo-1579751626657-72bc17010498?auto=format&fit=crop&w=1000&q=85",
-    postedAt: "2026-07-05T11:20:00+07:00",
-    hashtags: ["pizza", "hẹn hò"],
-  },
-  {
-    id: 4,
-    name: "Sushi Hokkaido Sachi",
-    area: "Quận 7",
-    address: "101 Tôn Dật Tiên, Tân Phú, Quận 7, TP.HCM",
-    cuisine: "Nhật Bản",
-    dish: "Sashimi moriawase",
-    rating: 4.7,
-    price: "450K",
-    excerpt: "Cá tươi, cắt miếng dày vừa phải và trình bày tinh tế như một khu vườn nhỏ.",
-    review:
-      "Set sashimi có độ tươi tốt, đặc biệt là cá hồi và sò điệp. Cơm sushi nắm vừa tay, hạt cơm còn ấm. Giá hơi cao nhưng tương xứng với chất lượng nguyên liệu và phong cách phục vụ chỉn chu.",
-    image:
-      "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?auto=format&fit=crop&w=1000&q=85",
-    postedAt: "2026-06-28T20:05:00+07:00",
-  },
-  {
-    id: 5,
-    name: "Ramen Danbo",
-    area: "Bình Thạnh",
-    address: "14 Phan Văn Hân, Phường 19, Bình Thạnh, TP.HCM",
-    cuisine: "Nhật Bản",
-    dish: "Tonkotsu ramen",
-    rating: 4.5,
-    price: "145K",
-    excerpt: "Nước tonkotsu sánh, thơm; sợi mì chọn được độ cứng đúng sở thích.",
-    review:
-      "Tô ramen nóng hổi với nước dùng xương heo đậm vị nhưng không quá mặn. Mì cứng vừa, thịt chashu mỏng và tan khá nhanh. Một địa chỉ hợp cho những tối muốn ăn gì đó thật ấm bụng.",
-    image:
-      "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&w=1000&q=85",
-    postedAt: "2026-06-22T12:10:00+07:00",
-  },
-  {
-    id: 6,
-    name: "Every Half Coffee",
-    area: "Phú Nhuận",
-    address: "22/2 Nguyễn Văn Trỗi, Phường 15, Phú Nhuận, TP.HCM",
-    cuisine: "Café",
-    dish: "Cold brew cam",
-    rating: 4.4,
-    price: "65K",
-    excerpt: "Một góc cà phê nhiều nắng, cold brew thanh và mùi cam rất dịu.",
-    review:
-      "Mình thích khoảng sân xanh và ánh sáng buổi sáng ở đây. Cold brew có vị chua sáng, thêm cam nên dễ uống kể cả với người mới thử cà phê đặc sản. Bánh chuối ẩm, không quá ngọt.",
-    image:
-      "https://images.unsplash.com/photo-1445116572660-236099ec97a0?auto=format&fit=crop&w=1000&q=85",
-    postedAt: "2026-06-15T08:30:00+07:00",
-  },
-];
-
-const demoCategories: CategoryOption[] = Array.from(new Set(spots.map((spot) => spot.cuisine))).map((name, index) => ({
-  id: `demo-category-${index + 1}`,
-  name,
-  usageCount: spots.filter((spot) => spot.cuisine === name).length,
-}));
-
-const galleryPhoto = (id: string) =>
-  `https://images.unsplash.com/${id}?auto=format&fit=crop&w=1400&q=85`;
-
-const galleryExtras: Record<number, string[]> = {
-  1: [
-    "photo-1504674900247-0877df9cc836",
-    "photo-1547592180-85f173990554",
-    "photo-1555126634-323283e090fa",
-    "photo-1601050690117-94f5f6fa8bd7",
-  ].map(galleryPhoto),
-  2: [
-    "photo-1591814468924-caf88d1232e1",
-    "photo-1557872943-16a5ac26437e",
-    "photo-1559847844-5315695dadae",
-    "photo-1559339352-11d035aa65de",
-  ].map(galleryPhoto),
-  3: [
-    "photo-1565299624946-b28f40a0ae38",
-    "photo-1513104890138-7c749659a591",
-    "photo-1574071318508-1cdbab80d002",
-    "photo-1593560708920-61dd98c46a4e",
-  ].map(galleryPhoto),
-  4: [
-    "photo-1553621042-f6e147245754",
-    "photo-1563612116625-3012372fccce",
-    "photo-1564489563601-c53cfc451e93",
-    "photo-1617196034183-421b4917c92d",
-  ].map(galleryPhoto),
-  5: [
-    "photo-1591814468924-caf88d1232e1",
-    "photo-1557872943-16a5ac26437e",
-    "photo-1547592166-23ac45744acd",
-    "photo-1614563637806-1d0e645e0940",
-  ].map(galleryPhoto),
-  6: [
-    "photo-1495474472287-4d71bcdd2085",
-    "photo-1493857671505-72967e2e2760",
-    "photo-1442512595331-e89e73853f31",
-    "photo-1511081692775-05d0f180a065",
-  ].map(galleryPhoto),
-};
-
 function galleryFor(spot: Spot) {
   if (spot.gallery?.length) return spot.gallery;
-  const extras = typeof spot.id === "number" ? galleryExtras[spot.id] ?? [] : [];
-  return [spot.image, ...extras];
+  return [spot.image];
 }
 
 function galleryCaptionsFor(spot: Spot, gallery: string[]) {
@@ -269,11 +117,10 @@ export function FoodBlog({ adminMode = false, editorOnly = false, initialEditorS
   const [editingSpot, setEditingSpot] = useState<Spot | null>(initialEditorSpot);
   const [saved, setSaved] = useState(false);
   const [draftRating, setDraftRating] = useState(initialEditorSpot?.rating ?? 4.5);
-  const [allSpots, setAllSpots] = useState<Spot[]>(spots);
-  const [managedCategories, setManagedCategories] = useState<CategoryOption[]>(
-    initialCategories ?? (adminMode ? [] : demoCategories),
-  );
+  const [allSpots, setAllSpots] = useState<Spot[]>([]);
+  const [managedCategories, setManagedCategories] = useState<CategoryOption[]>(initialCategories ?? []);
   const [about, setAbout] = useState<BlogAbout>(fallbackAbout);
+  const [reviewsLoaded, setReviewsLoaded] = useState(false);
   const [categoriesLoaded, setCategoriesLoaded] = useState(Boolean(initialCategories));
   const [isAdmin, setIsAdmin] = useState(adminMode);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -304,7 +151,7 @@ export function FoodBlog({ adminMode = false, editorOnly = false, initialEditorS
     ...existingPhotos.map((photo, index) => photo.caption.trim() || `Ảnh ${index + 1}`),
     ...photoCaptions.map((caption, index) => caption.trim() || `Ảnh ${existingPhotos.length + index + 1}`),
   ];
-  const featuredSpot = allSpots[0] ?? spots[0];
+  const featuredSpot = allSpots[0] ?? null;
   const stats = useMemo(() => ({
     places: String(allSpots.length).padStart(2, "0"),
     areas: String(new Set(allSpots.map((spot) => spot.area)).size).padStart(2, "0"),
@@ -333,9 +180,8 @@ export function FoodBlog({ adminMode = false, editorOnly = false, initialEditorS
     ])
       .then(([reviewsData, categoriesData, sessionData, aboutData]) => {
         if (cancelled) return;
-        if (Array.isArray(reviewsData.spots) && reviewsData.spots.length > 0) {
-          setAllSpots(reviewsData.spots);
-        }
+        if (Array.isArray(reviewsData.spots)) setAllSpots(reviewsData.spots);
+        setReviewsLoaded(true);
         if (Array.isArray(categoriesData.categories)) {
           if (adminMode || categoriesData.categories.length > 0) {
             setManagedCategories(categoriesData.categories);
@@ -349,7 +195,7 @@ export function FoodBlog({ adminMode = false, editorOnly = false, initialEditorS
         }
       })
       .catch(() => {
-        // The static demo remains usable when Cloudflare bindings are not active yet.
+        setReviewsLoaded(true);
         setCategoriesLoaded(true);
       });
     return () => {
@@ -767,17 +613,25 @@ export function FoodBlog({ adminMode = false, editorOnly = false, initialEditorS
             <div><dt>{stats.areas}</dt><dd>Khu vực</dd></div>
           </dl>
         </div>
-        <button className="hero-feature" onClick={() => openSpot(featuredSpot)} aria-label={`Đọc review ${featuredSpot.name}`}>
-          <img src={featuredSpot.image} alt={`${featuredSpot.dish} tại ${featuredSpot.name}`} />
-          <span className="image-shade" />
-          <span className="featured-label">Bài mới nhất</span>
-          <span className="featured-content">
-            <span>{featuredSpot.area} · <PostTimestamp value={featuredSpot.postedAt} /></span>
-            <strong>{featuredSpot.name}</strong>
-            <small>{featuredSpot.excerpt}</small>
-          </span>
-          <span className="round-arrow" aria-hidden="true">↗</span>
-        </button>
+        {featuredSpot ? (
+          <button className="hero-feature" onClick={() => openSpot(featuredSpot)} aria-label={`Đọc review ${featuredSpot.name}`}>
+            <img src={featuredSpot.image} alt={`${featuredSpot.dish} tại ${featuredSpot.name}`} />
+            <span className="image-shade" />
+            <span className="featured-label">Bài mới nhất</span>
+            <span className="featured-content">
+              <span>{featuredSpot.area} · <PostTimestamp value={featuredSpot.postedAt} /></span>
+              <strong>{featuredSpot.name}</strong>
+              <small>{featuredSpot.excerpt}</small>
+            </span>
+            <span className="round-arrow" aria-hidden="true">↗</span>
+          </button>
+        ) : (
+          <div className="hero-feature hero-feature-empty" role="status" aria-live="polite">
+            <span aria-hidden="true">···</span>
+            <strong>{reviewsLoaded ? "Chưa có bài review" : "Đang tải nhật ký"}</strong>
+            <small>{reviewsLoaded ? "Bài viết mới sẽ xuất hiện tại đây." : "Đang lấy dữ liệu mới nhất từ blog..."}</small>
+          </div>
+        )}
       </section>
 
       <section className="collection" id="reviews">
@@ -804,7 +658,9 @@ export function FoodBlog({ adminMode = false, editorOnly = false, initialEditorS
           ))}
         </div>
 
-        {filtered.length ? (
+        {!reviewsLoaded ? (
+          <div className="empty-state loading-state" role="status"><span aria-hidden="true">···</span><h3>Đang tải các bài review</h3><p>Dữ liệu mới nhất đang được lấy từ nhật ký.</p></div>
+        ) : filtered.length ? (
           <div className="card-grid">
             {filtered.map((spot, index) => (
               <article className={`food-card ${index === 0 ? "wide" : ""}`} key={spot.id}>

@@ -316,6 +316,11 @@ h1 em { color: var(--red); font-weight: 400; }
 .hero-feature::before { content: ""; position: absolute; z-index: 2; inset: 13px; border: 1px solid rgba(255,255,255,.35); pointer-events: none; }
 .hero-feature img { width: 100%; height: 100%; object-fit: cover; transition: transform .8s cubic-bezier(.2,.7,.2,1); }
 .hero-feature:hover img { transform: scale(1.035); }
+.hero-feature-empty { display: grid; place-content: center; justify-items: center; gap: 8px; padding: 42px; border: 1px dashed var(--line); background: var(--surface-warm); color: var(--text-secondary); cursor: default; text-align: center; }
+.hero-feature-empty::before { border-color: color-mix(in srgb, var(--line) 72%, transparent); }
+.hero-feature-empty > span { color: var(--red); font: 500 28px/1 var(--font-serif); letter-spacing: .14em; }
+.hero-feature-empty strong { color: var(--ink); font: 500 29px/1.25 var(--font-serif); }
+.hero-feature-empty small { max-width: 310px; color: var(--muted); font-size: 11px; line-height: 1.65; }
 .image-shade { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(16,12,7,.03) 30%, rgba(20,15,9,.82) 100%); }
 .featured-label { position: absolute; z-index: 3; top: 33px; left: 34px; background: var(--accent-fill); color: var(--on-accent); padding: 8px 12px; font-size: 9px; text-transform: uppercase; letter-spacing: .14em; }
 .featured-content { position: absolute; z-index: 3; left: 40px; right: 80px; bottom: 40px; color: white; display: flex; flex-direction: column; }

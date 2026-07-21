@@ -24,6 +24,8 @@ test("ships the Vietnamese food journal experience", async () => {
   assert.match(page, /PostTimestamp/);
   assert.doesNotMatch(page, /Ngày ghé quán|name="visitedAt"/i);
   assert.match(page, /Về blog/i);
+  assert.match(page, /reviewsLoaded/);
+  assert.doesNotMatch(page, /Bếp Nhà Xứ Quảng|Phở Thìn 13 Lò Đúc|Pizza 4P/i);
   assert.doesNotMatch(page, /codex-preview|Your site is taking shape|react-loading-skeleton/i);
 });
 
