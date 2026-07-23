@@ -795,7 +795,6 @@ export function FoodBlog({ adminMode = false, editorOnly = false, initialEditorS
               <div className="post-author">
                 <img className="author-avatar" src="/frog-logo.png" alt="" aria-hidden="true" />
                 <span><strong>andauhomnay</strong><small>Nhật ký vị giác · <PostTimestamp value={selected.postedAt} /></small></span>
-                <button aria-label="Lưu bài viết">♡</button>
               </div>
               <div className="review-kicker"><span>{selected.area}</span><Stars rating={selected.rating} /></div>
               <h2 id="review-title">{selected.name}</h2>
@@ -840,11 +839,6 @@ export function FoodBlog({ adminMode = false, editorOnly = false, initialEditorS
                 </a>
               </div>
               <p className="review-text">{selected.review}</p>
-              <div className="post-actions" aria-label="Tương tác bài viết">
-                <span aria-hidden="true">♡</span>
-                <span aria-hidden="true">◌</span>
-                <strong>128 lượt thích</strong>
-              </div>
               <div className="review-summary"><span>Chi phí khoảng</span><strong>{selected.price} / người</strong><span>Mình sẽ quay lại</span><strong>Có, chắc chắn!</strong></div>
               {adminMode && isAdmin && typeof selected.id === "string" && (
                 <div className="review-admin-actions">
