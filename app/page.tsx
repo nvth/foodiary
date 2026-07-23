@@ -109,6 +109,7 @@ export function FoodBlog({ adminMode = false, editorOnly = false, initialEditorS
   const [categoryId, setCategoryId] = useState("all");
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<Spot | null>(null);
+  const [addressCopied, setAddressCopied] = useState(false);
   const [photoIndex, setPhotoIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const lightboxTouchStart = useRef<number | null>(null);
@@ -538,12 +539,35 @@ export function FoodBlog({ adminMode = false, editorOnly = false, initialEditorS
 
   function openSpot(spot: Spot) {
     setPhotoIndex(0);
+    setAddressCopied(false);
     setSelected(spot);
   }
 
   function closeReview() {
     setLightboxOpen(false);
+    setAddressCopied(false);
     setSelected(null);
+  }
+
+  async function copyAddress(address: string) {
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(address);
+      } else {
+        const textarea = document.createElement("textarea");
+        textarea.value = address;
+        textarea.style.position = "fixed";
+        textarea.style.opacity = "0";
+        document.body.appendChild(textarea);
+        textarea.select();
+        const copied = document.execCommand("copy");
+        textarea.remove();
+        if (!copied) throw new Error("Copy command failed");
+      }
+      setAddressCopied(true);
+    } catch {
+      window.prompt("Sao chép địa chỉ:", address);
+    }
   }
 
   function openMobileLightbox() {
@@ -829,14 +853,19 @@ export function FoodBlog({ adminMode = false, editorOnly = false, initialEditorS
                   <small>Địa chỉ chi tiết</small>
                   <strong>{selected.address}</strong>
                 </span>
-                <a
-                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selected.address)}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  aria-label={`Mở địa chỉ ${selected.name} trên Google Maps`}
-                >
-                  Bản đồ ↗
-                </a>
+                <div className="address-actions">
+                  <a
+                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selected.address)}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label={`Mở địa chỉ ${selected.name} trên Google Maps`}
+                  >
+                    Bản đồ ↗
+                  </a>
+                  <button type="button" onClick={() => void copyAddress(selected.address)} aria-live="polite">
+                    {addressCopied ? "Đã sao chép ✓" : "Sao chép địa chỉ"}
+                  </button>
+                </div>
               </div>
               <p className="review-text">{selected.review}</p>
               <div className="review-summary"><span>Chi phí khoảng</span><strong>{selected.price} / người</strong></div>

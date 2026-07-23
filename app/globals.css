@@ -449,7 +449,9 @@ footer p { margin: 0; }
 .restaurant-address > span:nth-child(2) { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
 .restaurant-address small { color: var(--muted); font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; }
 .restaurant-address strong { font-size: 11px; line-height: 1.55; }
-.restaurant-address a { color: var(--red); font-size: 9px; font-weight: 700; white-space: nowrap; border-bottom: 1px solid currentColor; padding-bottom: 2px; }
+.address-actions { display: grid; justify-items: end; gap: 8px; }
+.address-actions a, .address-actions button { width: fit-content; border: 0; border-bottom: 1px solid currentColor; padding: 0 0 2px; background: transparent; color: var(--red); font: inherit; font-size: 9px; font-weight: 700; white-space: nowrap; cursor: pointer; }
+.address-actions button { color: var(--green); }
 .review-text { line-height: 1.85; color: var(--text-secondary); }
 .review-summary { display: grid; grid-template-columns: 1fr auto; gap: 9px 20px; margin-top: 18px; padding-top: 20px; border-top: 1px solid var(--line); font-size: 11px; }
 .review-summary span { color: var(--muted); }
@@ -612,7 +614,7 @@ footer p { margin: 0; }
   .review-body { padding: 30px 24px 36px; }
   .post-author { margin-bottom: 24px; }
   .restaurant-address { grid-template-columns: auto 1fr; }
-  .restaurant-address a { grid-column: 2; width: fit-content; }
+  .address-actions { grid-column: 2; justify-items: start; }
   .close { color: var(--ink); }
   .form-row { grid-template-columns: 1fr; }
   .photo-previews { grid-template-columns: repeat(3, minmax(0, 1fr)); }
