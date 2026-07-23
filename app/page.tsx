@@ -839,7 +839,7 @@ export function FoodBlog({ adminMode = false, editorOnly = false, initialEditorS
                 </a>
               </div>
               <p className="review-text">{selected.review}</p>
-              <div className="review-summary"><span>Chi phí khoảng</span><strong>{selected.price} / người</strong><span>Mình sẽ quay lại</span><strong>Có, chắc chắn!</strong></div>
+              <div className="review-summary"><span>Chi phí khoảng</span><strong>{selected.price} / người</strong></div>
               {adminMode && isAdmin && typeof selected.id === "string" && (
                 <div className="review-admin-actions">
                   <button className="edit-review" onClick={() => startEdit(selected)}>Chỉnh sửa bài</button>
