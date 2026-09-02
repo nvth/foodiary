@@ -53,6 +53,7 @@ export const reviews = sqliteTable(
     excerpt: text("excerpt").notNull(),
     content: text("content").notNull(),
     hashtags: text("hashtags", { mode: "json" }).$type<string[]>().notNull().default(sql`'[]'`),
+    hasMsg: integer("has_msg", { mode: "boolean" }).notNull().default(false),
     isFavorite: integer("is_favorite", { mode: "boolean" }).notNull().default(false),
     isFeatured: integer("is_featured", { mode: "boolean" }).notNull().default(false),
     status: text("status", { enum: ["draft", "published"] }).notNull().default("published"),

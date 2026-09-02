@@ -453,6 +453,8 @@ footer p { margin: 0; }
 .address-actions a, .address-actions button { width: fit-content; border: 0; border-bottom: 1px solid currentColor; padding: 0 0 2px; background: transparent; color: var(--red); font: inherit; font-size: 9px; font-weight: 700; white-space: nowrap; cursor: pointer; }
 .address-actions button { color: var(--green); }
 .review-text { line-height: 1.85; color: var(--text-secondary); }
+.msg-notice { margin: 16px 0 0; padding: 11px 13px; border-left: 3px solid var(--red); background: var(--surface-warm); color: var(--text-secondary); font-size: 10px; line-height: 1.6; }
+.msg-notice strong { color: var(--red); }
 .review-summary { display: grid; grid-template-columns: 1fr auto; gap: 9px 20px; margin-top: 18px; padding-top: 20px; border-top: 1px solid var(--line); font-size: 11px; }
 .review-summary span { color: var(--muted); }
 .review-admin-actions { display: flex; align-items: center; gap: 18px; margin-top: 24px; }

@@ -57,11 +57,12 @@ test("provides a persistent system-aware night mode across public and admin view
 });
 
 test("declares Cloudflare-native persistence and protected mutations", async () => {
-  const [hosting, schema, visitDateMigration, suggestionRateMigration, suggestionAbuse, adminRoute, categoryRoute, publicCategoryRoute, adminAboutRoute, publicAboutRoute, publicSuggestionRoute, adminSuggestionRoute, adminSuggestionPage, adminSidebar, mediaRoute, adminPage, adminAuth, publicPage, envExample] = await Promise.all([
+  const [hosting, schema, visitDateMigration, suggestionRateMigration, msgMigration, suggestionAbuse, adminRoute, categoryRoute, publicCategoryRoute, adminAboutRoute, publicAboutRoute, publicSuggestionRoute, adminSuggestionRoute, adminSuggestionPage, adminSidebar, mediaRoute, adminPage, adminAuth, publicPage, envExample] = await Promise.all([
     readFile(new URL("../.openai/hosting.json", import.meta.url), "utf8"),
     readFile(new URL("../db/schema.ts", import.meta.url), "utf8"),
     readFile(new URL("../drizzle/0005_light_rocket_racer.sql", import.meta.url), "utf8"),
     readFile(new URL("../drizzle/0006_handy_ares.sql", import.meta.url), "utf8"),
+    readFile(new URL("../drizzle/0007_whole_living_tribunal.sql", import.meta.url), "utf8"),
     readFile(new URL("../lib/suggestion-abuse.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/api/admin/reviews/route.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/api/admin/categories/route.ts", import.meta.url), "utf8"),
@@ -95,10 +96,12 @@ test("declares Cloudflare-native persistence and protected mutations", async () 
   assert.match(schema, /sqliteTable\(\s*"suggestions"/);
   assert.match(schema, /sqliteTable\(\s*"suggestion_rate_limits"/);
   assert.match(schema, /hashtags: text\("hashtags"/);
+  assert.match(schema, /hasMsg: integer\("has_msg"/);
   assert.doesNotMatch(schema, /visitedAt|visited_at/);
   assert.match(visitDateMigration, /DROP INDEX IF EXISTS `reviews_status_visited_idx`/);
   assert.match(visitDateMigration, /ALTER TABLE `reviews` DROP COLUMN `visited_at`/);
   assert.match(suggestionRateMigration, /CREATE TABLE IF NOT EXISTS `suggestion_rate_limits`/);
+  assert.match(msgMigration, /ALTER TABLE `reviews` ADD `has_msg`/);
   assert.match(suggestionAbuse, /HMAC/);
   assert.match(suggestionAbuse, /cf-connecting-ip/);
   assert.match(adminRoute, /requireAdmin\(request\)/);
@@ -128,6 +131,8 @@ test("declares Cloudflare-native persistence and protected mutations", async () 
   assert.match(adminAuth, /getAdminState\(request\)/);
   assert.match(adminAuth, /redirect\("\/"\)/);
   assert.match(publicPage, /return <FoodBlog \/>/);
+  assert.match(publicPage, /Có mì chính/);
+  assert.match(publicPage, /selected\.hasMsg/);
   assert.match(envExample, /ADMIN_EMAILS=/);
   assert.match(envExample, /SUGGESTION_RATE_LIMIT_SECRET=/);
 });

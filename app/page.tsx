@@ -39,6 +39,7 @@ export type Spot = {
   featured?: boolean;
   dishes?: ReviewDish[];
   hashtags?: string[];
+  hasMsg?: boolean;
 };
 
 type ReviewsResponse = { spots?: Spot[] };
@@ -422,6 +423,7 @@ export function FoodBlog({ adminMode = false, editorOnly = false, initialEditorS
           rating: draftRating,
           excerpt: fields.get("excerpt"),
           content: fields.get("content"),
+          hasMsg: fields.get("hasMsg") === "on",
           isFavorite: fields.get("isFavorite") === "on",
           isFeatured: fields.get("isFeatured") === "on",
           hashtags,
@@ -868,6 +870,11 @@ export function FoodBlog({ adminMode = false, editorOnly = false, initialEditorS
                 </div>
               </div>
               <p className="review-text">{selected.review}</p>
+              {selected.hasMsg && (
+                <p className="msg-notice" role="note">
+                  <strong>Có mì chính</strong>
+                </p>
+              )}
               <div className="review-summary"><span>Chi phí khoảng</span><strong>{selected.price} / người</strong></div>
               {adminMode && isAdmin && typeof selected.id === "string" && (
                 <div className="review-admin-actions">
@@ -1113,6 +1120,7 @@ export function FoodBlog({ adminMode = false, editorOnly = false, initialEditorS
                 </div>
               </section>
               <div className="form-options">
+                <label><input name="hasMsg" type="checkbox" defaultChecked={editingSpot?.hasMsg} /> Có mì chính</label>
                 <label><input name="isFavorite" type="checkbox" defaultChecked={editingSpot?.favorite} /> Quán yêu thích</label>
                 <label><input name="isFeatured" type="checkbox" defaultChecked={editingSpot?.featured} /> Đưa lên bài nổi bật</label>
               </div>

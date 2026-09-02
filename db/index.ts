@@ -36,6 +36,7 @@ export type ReviewInput = {
   excerpt: string;
   content: string;
   hashtags: string[];
+  hasMsg: boolean;
   isFavorite: boolean;
   isFeatured: boolean;
   dishes: Array<{ name: string; photoIndex: number }>;
@@ -60,6 +61,7 @@ export type PublishedSpot = {
   excerpt: string;
   review: string;
   hashtags: string[];
+  hasMsg: boolean;
   image: string;
   gallery: string[];
   galleryCaptions: string[];
@@ -178,6 +180,7 @@ async function initializeDatabase(db: D1Database): Promise<void> {
       excerpt TEXT NOT NULL,
       content TEXT NOT NULL,
       hashtags TEXT NOT NULL DEFAULT '[]',
+      has_msg INTEGER NOT NULL DEFAULT 0,
       is_favorite INTEGER NOT NULL DEFAULT 0,
       is_featured INTEGER NOT NULL DEFAULT 0,
       status TEXT NOT NULL DEFAULT 'published' CHECK (status IN ('draft', 'published')),
@@ -248,6 +251,13 @@ async function initializeDatabase(db: D1Database): Promise<void> {
   if (!reviewColumns.results.some((column) => column.name === "hashtags")) {
     try {
       await db.prepare("ALTER TABLE reviews ADD COLUMN hashtags TEXT NOT NULL DEFAULT '[]'").run();
+    } catch (error) {
+      if (!(error instanceof Error) || !/duplicate column/i.test(error.message)) throw error;
+    }
+  }
+  if (!reviewColumns.results.some((column) => column.name === "has_msg")) {
+    try {
+      await db.prepare("ALTER TABLE reviews ADD COLUMN has_msg INTEGER NOT NULL DEFAULT 0").run();
     } catch (error) {
       if (!(error instanceof Error) || !/duplicate column/i.test(error.message)) throw error;
     }
@@ -517,6 +527,7 @@ type ReviewRow = {
   created_at: string;
   is_favorite: number;
   is_featured: number;
+  has_msg: number;
 };
 
 type PhotoRow = {
@@ -668,6 +679,7 @@ export async function listPublishedSpots(): Promise<PublishedSpot[]> {
       reviews.excerpt,
       reviews.content,
       reviews.hashtags,
+      reviews.has_msg,
       reviews.created_at,
       reviews.is_favorite,
       reviews.is_featured
@@ -715,6 +727,7 @@ export async function listPublishedSpots(): Promise<PublishedSpot[]> {
       excerpt: row.excerpt,
       review: row.content,
       hashtags: parseStoredReviewHashtags(row.hashtags),
+      hasMsg: Boolean(row.has_msg),
       image: gallery[0] ?? "/globe.svg",
       gallery,
       galleryCaptions: photos.map((photo) => photo.caption),
@@ -742,8 +755,8 @@ export async function createReview(input: ReviewInput): Promise<string> {
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`)
       .bind(restaurantId, input.name, slug, input.area, input.address, category.name, category.id, input.priceLabel),
     db.prepare(`INSERT INTO reviews
-      (id, restaurant_id, dish, rating, excerpt, content, hashtags, is_favorite, is_featured, status)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'published')`)
+      (id, restaurant_id, dish, rating, excerpt, content, hashtags, has_msg, is_favorite, is_featured, status)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'published')`)
       .bind(
         reviewId,
         restaurantId,
@@ -752,6 +765,7 @@ export async function createReview(input: ReviewInput): Promise<string> {
         input.excerpt,
         input.content,
         JSON.stringify(input.hashtags),
+        input.hasMsg ? 1 : 0,
         input.isFavorite ? 1 : 0,
         input.isFeatured ? 1 : 0,
       ),
@@ -841,7 +855,7 @@ export async function updateReview(reviewId: string, input: ReviewInput): Promis
       ),
     db.prepare(`UPDATE reviews SET
       dish = ?, rating = ?, excerpt = ?, content = ?, hashtags = ?,
-      is_favorite = ?, is_featured = ?, updated_at = CURRENT_TIMESTAMP
+      has_msg = ?, is_favorite = ?, is_featured = ?, updated_at = CURRENT_TIMESTAMP
       WHERE id = ?`)
       .bind(
         input.dish,
@@ -849,6 +863,7 @@ export async function updateReview(reviewId: string, input: ReviewInput): Promis
         input.excerpt,
         input.content,
         JSON.stringify(input.hashtags),
+        input.hasMsg ? 1 : 0,
         input.isFavorite ? 1 : 0,
         input.isFeatured ? 1 : 0,
         reviewId,

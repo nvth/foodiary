@@ -1,0 +1,1 @@
+ALTER TABLE `reviews` ADD `has_msg` integer DEFAULT false NOT NULL;

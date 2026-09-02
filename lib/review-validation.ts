@@ -43,6 +43,7 @@ export function parseReviewInput(value: unknown): ReviewInput {
     excerpt: requiredString(input.excerpt, "Mô tả ngắn", 320),
     content: requiredString(input.content, "Bài review", 8000),
     hashtags: parseReviewHashtags(input.hashtags),
+    hasMsg: input.hasMsg === true,
     isFavorite: Boolean(input.isFavorite),
     isFeatured: Boolean(input.isFeatured),
     dishes,
